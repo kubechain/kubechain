@@ -1,0 +1,28 @@
+{
+  "name": "kubechain",
+  "version": "0.1.0",
+  "description": "",
+  "main": "./src/main/index.js",
+  "bin": {
+    "kubechain": "./src/bin/kubechain"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kubechain/kubechain.git"
+  },
+  "dependencies": {
+    "download": "^6.2.5",
+    "fs-extra": "^5.0.0",
+    "globby": "^8.0.0",
+    "jsonpath": "^1.0.0",
+    "kubernetes-client": "^3.18.1",
+    "shelljs": "^0.8.1",
+    "uuid": "^3.2.1",
+    "yargs": "^11.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Robert Diebels",
+  "license": "ISC"
+}
