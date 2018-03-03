@@ -1,6 +1,6 @@
 {
   "name": "kubechain",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "",
   "main": "./src/main/index.js",
   "bin": {
@@ -17,6 +17,8 @@
     "jsonpath": "^1.0.0",
     "kubernetes-client": "^3.18.1",
     "shelljs": "^0.8.1",
+    "toml": "^2.3.3",
+    "tomlify-j0.4": "^3.0.0",
     "uuid": "^3.2.1",
     "yargs": "^11.0.0"
   },
@@ -24,5 +26,11 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Robert Diebels",
-  "license": "ISC"
+  "license": "GPL-3.0-only",
+  "devDependencies": {
+    "@types/fs-extra": "^5.0.0",
+    "@types/node": "^9.4.6",
+    "@types/uuid": "^3.4.3",
+    "typescript": "^2.7.2"
+  }
 }

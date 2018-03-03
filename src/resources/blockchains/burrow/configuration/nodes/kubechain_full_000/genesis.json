@@ -1,0 +1,121 @@
+{
+  "genesis_time": "2018-02-16T13:55:19.725Z",
+  "chain_id": "kubechain",
+  "params": {
+    "global_permissions": {
+      "base": {
+        "perms": 2302,
+        "set": 16383
+      },
+      "roles": []
+    }
+  },
+  "accounts": [
+    {
+      "address": "6806C5E2C8CE1B88E1AFE6AC4768155AF665A8F7",
+      "amount": 99999999999999,
+      "name": "kubechain_full_000",
+      "permissions": {
+        "base": {
+          "perms": 16383,
+          "set": 16383
+        },
+        "roles": []
+      }
+    },
+    {
+      "address": "ABEA779381C58B72EEC7DCA748967300EC586437",
+      "amount": 9999999999,
+      "name": "kubechain_validator_000",
+      "permissions": {
+        "base": {
+          "perms": 32,
+          "set": 16383
+        },
+        "roles": []
+      }
+    },
+    {
+      "address": "AF57475787C5BAB20DF12E89D7985B620AAD1562",
+      "amount": 9999999999,
+      "name": "kubechain_validator_001",
+      "permissions": {
+        "base": {
+          "perms": 32,
+          "set": 16383
+        },
+        "roles": []
+      }
+    },
+    {
+      "address": "066589AAB57032F10043287E88396FF8F1E18005",
+      "amount": 9999999999,
+      "name": "kubechain_validator_002",
+      "permissions": {
+        "base": {
+          "perms": 32,
+          "set": 16383
+        },
+        "roles": []
+      }
+    }
+  ],
+  "validators": [
+    {
+      "pub_key": [
+        1,
+        "83A9EBCAB5E3C9D693BDC35B73F5AD86888E2E938B4DD13EADA91456297377C9"
+      ],
+      "amount": 9999999999,
+      "name": "kubechain_full_000",
+      "unbond_to": [
+        {
+          "address": "6806C5E2C8CE1B88E1AFE6AC4768155AF665A8F7",
+          "amount": 9999999999
+        }
+      ]
+    },
+    {
+      "pub_key": [
+        1,
+        "2CCAD69C81342A79BCC19E2D5D56EA1C368CC7FBA8B80772624BA4DD8293859B"
+      ],
+      "amount": 9999999998,
+      "name": "kubechain_validator_000",
+      "unbond_to": [
+        {
+          "address": "ABEA779381C58B72EEC7DCA748967300EC586437",
+          "amount": 9999999998
+        }
+      ]
+    },
+    {
+      "pub_key": [
+        1,
+        "5F0BC5E9C641ED4C4DC852A1A7AC9ABA273EBC6F6DD2017AF5D3E4CB2B4CB20B"
+      ],
+      "amount": 9999999998,
+      "name": "kubechain_validator_001",
+      "unbond_to": [
+        {
+          "address": "AF57475787C5BAB20DF12E89D7985B620AAD1562",
+          "amount": 9999999998
+        }
+      ]
+    },
+    {
+      "pub_key": [
+        1,
+        "B883898F1B8C054D8F83B25E0372C88F6DB74DE0EA9DB234FDED2FBA24A0AEC1"
+      ],
+      "amount": 9999999998,
+      "name": "kubechain_validator_002",
+      "unbond_to": [
+        {
+          "address": "066589AAB57032F10043287E88396FF8F1E18005",
+          "amount": 9999999998
+        }
+      ]
+    }
+  ]
+}

@@ -13,15 +13,15 @@
    - Do not forget to proxy. Kubechain does not support picking a Kubernetes cluster.
 
 **Hyperledger Fabric configuration**
-1. At a preferred ``path`` create a new directory named ``configuration``.
-1. Create sub-directory named ``fabric`` to ``configuration``.
+1. At a preferred ``hostpath`` create a new directory named ``configuration``.
+1. Create sub-directory named ``fabric`` in the ``configuration`` directory.
 1. Add the standard Hyperledger Fabric configuration files to the ``fabric`` directory.
-  - These are ``configtx.yaml`` and ``crypto-config.yaml``.
+   - These are ``configtx.yaml`` and ``crypto-config.yaml``.
 
 **Create the Kubernetes Cluster**
 1. Open a new terminal/console.
-1. Change your current directory to the ``path`` where you created the ``configuration`` directory.
-   - i.e. Run: ``cd path``, not `cd path/configuration`
+1. Change your current directory to the ``hostpath`` where you created the ``configuration`` directory.
+   - i.e. Run: ``cd hostpath``, not `cd hostpath/configuration`
 1. Run: ``kubechain create config fabric``
 1. Run: ``kubechain create cluster fabric``
 1. Verify that the cluster is operational by your preferred means.
