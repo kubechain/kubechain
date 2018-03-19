@@ -13,7 +13,7 @@ export default class BurrowConfigurationCreator implements IAdapter {
 
     start() {
         const configurationAdapter = new ConfigurationAdapter();
-        configurationAdapter.start();
+        configurationAdapter.create();
         const kubernetesAdapter = this.getKubernetesAdapter(this.kubernetesTarget);
         kubernetesAdapter.start();
     }
