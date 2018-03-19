@@ -7,7 +7,7 @@ export default class ObjectMeta implements IResource {
     private labels: any;
 
     constructor(name: string, namespace: string) {
-        this.name = Naming.toDNS1123(name);
+        this.name = name;
         this.namespace = namespace;
         this.labels = {};
     }

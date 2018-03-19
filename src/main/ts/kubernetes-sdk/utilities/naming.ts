@@ -33,7 +33,7 @@ function fileNameToPosixFileName(fileName: string) {
  * @returns {string}
  * @private
  */
-function stringToValidKubernetesName(name: string, namespace: string) {
+function namespacedUuid(name: string, namespace: string) {
     const uuidNamespace = uuidv5(namespace, uuidv5.DNS);
     const uuid = uuidv5(name, uuidNamespace);
     return toDNS1123(uuid);
@@ -51,7 +51,7 @@ function fullyQualifiedDomainName(hostname: string, serviceName: string, namespa
 export {
     pathToPosixPath,
     fileNameToPosixFileName,
-    stringToValidKubernetesName,
+    namespacedUuid,
     toDNS1123,
     fullyQualifiedDomainName
 };

@@ -1,5 +1,5 @@
-const FabricClusterDeleter = require('../../blockchains/fabric/cluster/delete');
-const BurrowClusterDeleter = require('../../blockchains/burrow/cluster/delete');
+const FabricClusterDeleter = require('../../../lib/blockchains/fabric/kubernetes/cluster/delete').default;
+const BurrowClusterDeleter = require('../../../lib/blockchains/burrow/kubernetes/cluster/delete').default;
 
 const deleters = [FabricClusterDeleter, BurrowClusterDeleter];
 
@@ -8,9 +8,16 @@ exports.desc = 'Delete Kubernetes-cluster for <chain>';
 exports.builder = {};
 exports.handler = function (argv) {
     deleters.forEach(Deleter => {
-        if (Deleter.validCommandForChain(argv.chain)) {
-            console.log('Deleting Kubernetes cluster for %s', argv.chain);
-            Deleter.delete();
+        try {
+            const deleter = new Deleter();
+            if (deleter.validCommandForChain(argv.chain)) {
+                console.log('Deleting Kubernetes cluster for %s', argv.chain);
+                deleter.delete();
+            }
+        }
+        catch (e) {
+            console.error("Unable to delete cluster for %s ", argv.chain);
+            console.error("Reason:", e);
         }
     })
 };

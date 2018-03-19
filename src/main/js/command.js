@@ -1,6 +1,3 @@
-/**
- * Created by Robert on 11-7-2017.
- */
 const shell = require('shelljs');
 
 class ShellCommand {

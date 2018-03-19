@@ -12,6 +12,8 @@ export default class Container implements IContainer {
     private environment: EnvVar[];
     private ports: ContainerPort[];
     private volumeMounts: VolumeMount[];
+    private args: string[];
+    private workingDirectory: string;
 
     constructor(name: string, image: string) {
         this.name = name;
@@ -21,6 +23,7 @@ export default class Container implements IContainer {
         this.volumeMounts = [];
         this.environment = [];
         this.commands = [];
+        this.args = [];
     }
 
     addPort(port: ContainerPort) {
@@ -39,9 +42,17 @@ export default class Container implements IContainer {
         this.commands.push(command);
     }
 
+    addArgument(argument: string) {
+        this.args.push(argument);
+    }
+
     //TODO: Create actual type
     setSecurityContext(context: {}) {
         this.securityContext = context;
+    }
+
+    setWorkingDirectory(directoryPath: string) {
+        this.workingDirectory = directoryPath;
     }
 
     toJson() {
@@ -51,6 +62,7 @@ export default class Container implements IContainer {
             "imagePullPolicy": this.imagePullPolicy,
             "securityContext": this.securityContext,
             "command": this.commands,
+            "args": this.args,
             "ports": this.ports.map(port => {
                 return port.toJson();
             }),
@@ -59,7 +71,8 @@ export default class Container implements IContainer {
             }),
             "volumeMounts": this.volumeMounts.map(volumeMount => {
                 return volumeMount.toJson();
-            })
+            }),
+            "workingDir": this.workingDirectory
         }
     }
 }

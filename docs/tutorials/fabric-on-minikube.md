@@ -22,6 +22,6 @@
 1. Open a new terminal/console.
 1. Change your current directory to the ``hostpath`` where you created the ``configuration`` directory.
    - i.e. Run: ``cd hostpath``, not `cd hostpath/configuration`
-1. Run: ``kubechain create config fabric``
+1. Run: ``kubechain create config -b fabric -k minikube``
 1. Run: ``kubechain create cluster fabric``
 1. Verify that the cluster is operational by your preferred means.

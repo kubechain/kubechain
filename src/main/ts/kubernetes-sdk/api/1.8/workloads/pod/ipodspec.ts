@@ -15,12 +15,3 @@ export default interface IPodSpec extends IResource {
 
     addVolume(volume: IVolume): void;
 }
-
-// {
-//     "hostname": this._hostname,
-//     "subdomain": this.domain,
-//     "restartPolicy": this._restartPolicy,
-//     "initContainers": this._initContainers,
-//     "containers": this._containers,
-//     "volumes": this._volumes
-// };

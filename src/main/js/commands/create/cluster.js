@@ -1,5 +1,5 @@
-const FabricClusterCreator = require('../../blockchains/fabric/cluster/create');
-const BurrowClusterCreator = require('../../blockchains/burrow/cluster/create');
+const FabricClusterCreator = require('../../../lib/blockchains/fabric/kubernetes/cluster/create').default;
+const BurrowClusterCreator = require('../../../lib/blockchains/burrow/kubernetes/cluster/create').default;
 
 const creators = [FabricClusterCreator, BurrowClusterCreator];
 
@@ -8,9 +8,11 @@ exports.desc = 'Create Kubernetes-cluster for <chain>';
 exports.builder = {};
 exports.handler = function (argv) {
     creators.forEach(Creator => {
-        if (Creator.validCommandForChain(argv.chain)) {
+        const creator = new Creator();
+        if (creator.validCommandForChain(argv.chain)) {
             console.log('Creating Kubernetes cluster for %s', argv.chain);
-            Creator.create();
+            creator.create();
         }
     })
+
 };

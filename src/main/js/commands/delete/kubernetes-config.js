@@ -1,5 +1,5 @@
-const FabricKubernetesConfigurationDeleter = require('../../blockchains/fabric/configuration/kubernetes/delete');
-const BurrowKubernetesConfigurationDeleter = require('../../blockchains/burrow/configuration/kubernetes/delete');
+const FabricKubernetesConfigurationDeleter = require('../../../lib/blockchains/fabric/kubernetes/configuration/delete').default;
+const BurrowKubernetesConfigurationDeleter = require('../../../lib/blockchains/burrow/kubernetes/configuration/delete').default;
 
 const deleters = [FabricKubernetesConfigurationDeleter, BurrowKubernetesConfigurationDeleter];
 
@@ -8,9 +8,10 @@ exports.desc = 'Delete Kubernetes configuration for <chain>';
 exports.builder = {};
 exports.handler = function (argv) {
     deleters.forEach(Deleter => {
-        if (Deleter.validCommandForChain(argv.chain)) {
-            console.log('Deleting Kubernetes congiguration for %s', argv.chain);
-            Deleter.delete();
+        const deleter = new Deleter();
+        if (deleter.validCommandForChain(argv.chain)) {
+            console.log('Deleting Kubernetes configuration for %s', argv.chain);
+            deleter.delete();
         }
     });
 };

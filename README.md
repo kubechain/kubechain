@@ -36,9 +36,9 @@ As of right now Kubechain is intented to be used via the CLI. Blockchain adapter
 
 - ``create chain-config <chain>``
   - Creates the blockchain configuration.
-- ``create kubernetes-config <chain>``
+- ``create kubernetes-config [blockchain-target:b] [kubernetes-target:k]``
   - Creates the kubernetes resources.
-- ``create config <chain>``
+- ``create config [blockchain-target:b] [kubernetes-target:k]``
   - Creates all the configuration necessary to create a Kubernetes resources.
 - ``create cluster <chain>``
   - Creates a Kubernetes cluster from previously created Kubernetes resources.
@@ -71,7 +71,8 @@ Currently supported Kubernetes targets are:
 
 **Target configuration**
 
-As of right now Kubernetes targets are not configurable. 
+Release 0.3.0 introduced an abstraction enabling other kubernetes-targets. 
+AWS support will be available in release 0.4.0. 
 
 **Reasoning**
 
@@ -140,9 +141,14 @@ For all available tutorials check out [the tutorial documentation](https://githu
 1. Open a new terminal/console.
 1. Change your current directory to the ``hostpath`` where you created the ``configuration`` directory.
    - i.e. Run: ``cd hostpath``, not `cd hostpath/configuration`
-1. Run: ``kubechain create config fabric``
+1. Run: ``kubechain create config -b fabric -k minikube``
 1. Run: ``kubechain create cluster fabric``
 1. Verify that the cluster is operational by your preferred means.
+
+# Alternatives
+An alternative to this project would be using [Helm Charts](https://helm.sh).
+You could have a look at [Burrow's helm charts](https://hub.kubeapps.com/charts/incubator/burrow) and see if they fit your needs.
+Hyperledger Fabric does not have any helm charts available as far as I'm aware.
 
 # Support
 As of right now I'm doing this project on my own as it is part of my Master Thesis.

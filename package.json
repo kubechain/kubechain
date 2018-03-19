@@ -1,8 +1,8 @@
 {
   "name": "kubechain",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "",
-  "main": "./src/main/index.js",
+  "main": "./src/main/js/index.js",
   "bin": {
     "kubechain": "./src/bin/kubechain"
   },
@@ -11,6 +11,7 @@
     "url": "https://github.com/kubechain/kubechain.git"
   },
   "dependencies": {
+    "@types/es6-shim": "^0.31.35",
     "download": "^6.2.5",
     "fs-extra": "^5.0.0",
     "globby": "^8.0.0",
@@ -29,7 +30,9 @@
   "license": "GPL-3.0-only",
   "devDependencies": {
     "@types/fs-extra": "^5.0.0",
+    "@types/globby": "^6.1.0",
     "@types/node": "^9.4.6",
+    "@types/shelljs": "^0.7.8",
     "@types/uuid": "^3.4.3",
     "typescript": "^2.7.2"
   }

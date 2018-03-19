@@ -5,6 +5,7 @@ import IVolumeSource from "../volumes/volumesources/ivolumesource";
 import PersistentVolumeClaimSpec from "./persistentvolumeclaimspec";
 import IResourceRequirements from "../../../meta/iresourcerequirements";
 import ILabelSelector from "../../../meta/ilabeleselector";
+import IVolume from "../volumes/ivolume";
 
 export default class PersistentVolumeClaim implements IPersistentVolumeClaimSpec, ILabelSelector, IVolumeSource {
     private metadata: ObjectMeta;
@@ -46,7 +47,7 @@ export default class PersistentVolumeClaim implements IPersistentVolumeClaimSpec
         };
     }
 
-    toVolume() {
+    toVolume(): IVolume {
         return this.volumeSource.toVolume();
     }
 }
