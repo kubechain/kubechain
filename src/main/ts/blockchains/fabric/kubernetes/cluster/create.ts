@@ -4,21 +4,22 @@ import ICommandExecutor from "../../../utilities/icommandexecutor";
 import Options from "../../options";
 import Kubechain from "../../../../kubechain";
 import KubernetesResourceCreator from "../../../../kubernetes-sdk/utilities/resources/resourcecreator";
+import KubechainTargets from "../../../../targets";
+import {promptUserForDesiredContext} from "../../../utilities/cluster";
 
 export default class ClusterCreator implements ICommandExecutor {
     private options: Options;
-
-    constructor() {
-        this.options = new Options(new Kubechain());
-    }
+    private context: string;
 
     validCommandForChain(chain: string): boolean {
         return chain === 'fabric';
     }
 
-    async create() {
+    async create(targets: KubechainTargets) {
+        this.options = new Options(new Kubechain(targets));
         try {
             console.info('[CREATING]');
+            this.context = await promptUserForDesiredContext();
             await this.launchOrdererOrganizations();
             await this.launchPeerOrganizations();
         }
@@ -50,7 +51,7 @@ export default class ClusterCreator implements ICommandExecutor {
 
     private createOrganization(basePath: string, name: string) {
         const organizationPath = path.join(basePath, name);
-        const creator = new KubernetesResourceCreator(name);
+        const creator = new KubernetesResourceCreator(name, this.context);
         creator.doNotCreateKind("Job");
         return creator.createResourcesFoundInDirectoryTree(organizationPath);
     }

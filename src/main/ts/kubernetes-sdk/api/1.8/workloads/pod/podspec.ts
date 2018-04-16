@@ -1,14 +1,18 @@
 import IPodSpec from "./ipodspec";
 import IVolume from "../../configuration-storage/storage/volumes/ivolume";
 import IContainer from "../container/icontainer";
+import Affinity from "./affinity/affinity";
+import PodSecurityContext from "./securitycontext";
 
 export default class PodSpec implements IPodSpec {
     private hostname: string;
     private subdomain: string;
+    private affinity: Affinity;
     private restartPolicy: string;
     private initContainers: IContainer[];
     private containers: IContainer[];
     private volumes: IVolume[];
+    private podSecurityContext: PodSecurityContext;
 
     constructor() {
         this.initContainers = [];
@@ -24,8 +28,16 @@ export default class PodSpec implements IPodSpec {
         this.subdomain = subdomain;
     }
 
+    setAffinity(affinity: Affinity): void {
+        this.affinity = affinity;
+    }
+
     setRestartPolicy(policy: string): void {
         this.restartPolicy = policy;
+    }
+
+    setPodSecurityContext(podSecurityContext: PodSecurityContext): void {
+        this.podSecurityContext = podSecurityContext;
     }
 
     addInitContainer(container: IContainer): void {
@@ -44,7 +56,9 @@ export default class PodSpec implements IPodSpec {
         return {
             "hostname": this.hostname,
             "subdomain": this.subdomain,
+            "affinity": (this.affinity) ? this.affinity.toJson() : undefined,
             "restartPolicy": this.restartPolicy,
+            "securityContext": (this.podSecurityContext) ? this.podSecurityContext.toJson() : undefined,
             "initContainers": this.initContainers.map(initContainer => {
                 return initContainer.toJson();
             }),

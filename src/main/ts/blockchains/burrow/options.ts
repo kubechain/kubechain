@@ -33,7 +33,6 @@ interface BurrowOptions {
     kubernetes: {
         paths: {
             root: string,
-            accounts: string,
             seeds: string,
             peers: string
         }
@@ -46,17 +45,17 @@ export default class Options {
 
     constructor(kubechain: Kubechain) {
         this.kubechain = kubechain;
-        this.options = this._defaults();
+        this.options = this.defaults();
     }
 
-    name(): string {
-        return 'burrow';
+    private name(): string {
+        return `${this.kubechain.get('$.targets.blockchain.name')}-${this.kubechain.get('$.targets.kubernetes.name')}`;
     }
 
-    _defaults(): BurrowOptions {
-        const configurationRoot = Path.join(this.kubechain.get('$.paths.configuration'), this.name());
-        const nodesRoot = Path.join(configurationRoot, 'accounts');
-        const blockchainRoot = Path.join(this.kubechain.get('$.paths.blockchains'), this.name());
+    private defaults(): BurrowOptions {
+        const configurationRoot = Path.join(this.kubechain.get('$.paths.configuration'), this.kubechain.get('$.targets.blockchain.name'));
+        const accountsRoot = Path.join(configurationRoot, 'accounts');
+        const blockchainRoot = Path.join(this.kubechain.get('$.paths.blockchains'), this.kubechain.get('$.targets.blockchain.name'));
         const intermediateRoot = Path.join(blockchainRoot, 'intermediate');
         const kubernetesRoot = Path.join(this.kubechain.get('$.paths.kubernetes'), this.name());
         return {
@@ -68,8 +67,8 @@ export default class Options {
                 },
                 accounts: {
                     paths: {
-                        root: nodesRoot,
-                        accountsJson: Path.join(nodesRoot, 'accounts.json')
+                        root: accountsRoot,
+                        accountsJson: Path.join(accountsRoot, 'accounts.json')
                     }
                 }
             },
@@ -88,7 +87,6 @@ export default class Options {
             kubernetes: {
                 paths: {
                     root: kubernetesRoot,
-                    accounts: Path.join(kubernetesRoot, 'accounts'),
                     seeds: Path.join(kubernetesRoot, 'seeds'),
                     peers: Path.join(kubernetesRoot, 'peers')
                 }

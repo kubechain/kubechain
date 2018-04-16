@@ -2,26 +2,26 @@ import Options from "../../options";
 import Kubechain from "../../../../kubechain";
 import KubernetesResourceCreator from '../../../../kubernetes-sdk/utilities/resources/resourcecreator';
 import ICommandExecutor from "../../../utilities/icommandexecutor";
+import KubechainTargets from "../../../../targets";
+import {promptUserForDesiredContext} from "../../../utilities/cluster";
 
 export default class ClusterCreator implements ICommandExecutor {
-    private options: Options;
-
-    constructor() {
-        this.options = new Options(new Kubechain());
-    }
-
     validCommandForChain(chain: string): boolean {
-        return chain === this.options.get('$.name');
+        return chain === "burrow";
     }
 
-    async create() {
+    async create(targets: KubechainTargets) {
+        const options = new Options(new Kubechain(targets));
+
         try {
             console.info('[CREATING]');
-            await new KubernetesResourceCreator(this.options.get('$.name')).createResourcesFoundInDirectory(this.options.get('$.kubernetes.paths.root'));
+            const context = await promptUserForDesiredContext();
+            console.info('[NETWORK]');
+            await new KubernetesResourceCreator(options.get('$.name'), context).createResourcesFoundInDirectory(options.get('$.kubernetes.paths.root'));
             console.info('[SEEDS]');
-            await new KubernetesResourceCreator(this.options.get('$.name')).createResourcesFoundInDirectoryTree(this.options.get('$.kubernetes.paths.seeds'));
+            await new KubernetesResourceCreator(options.get('$.name'), context).createResourcesFoundInDirectoryTree(options.get('$.kubernetes.paths.seeds'));
             console.info('[PEERS]');
-            await new KubernetesResourceCreator(this.options.get('$.name')).createResourcesFoundInDirectoryTree(this.options.get('$.kubernetes.paths.peers'));
+            await new KubernetesResourceCreator(options.get('$.name'), context).createResourcesFoundInDirectoryTree(options.get('$.kubernetes.paths.peers'));
         }
         catch (e) {
             console.error('Unable to create Burrow cluster.');

@@ -1,0 +1,20 @@
+# Creating a Hyperledger Burrow cluster on Minikube
+
+## Pre-requisites
+- You've installed NodeJS (version 8 and higher) and NPM.
+- You've installed Kubectl and added it to the PATH variable on your system.
+- You've created a Kuberntes cluster in GCE.
+  - One way to do this is using [Kops](https://github.com/kubernetes/kops/blob/release-1.8/docs/tutorial/gce.md).
+- You've created the necessary Hyperledger Burrow configuration by following [the associated tutorial](configuration.md).
+
+## Setup the environment
+1. Open a new terminal/console.
+1. Run: ``npm install -g kubechain``
+
+## Create the Kubernetes Cluster
+1. Open a new terminal/console.
+1. Change your current directory to the ``hostpath`` where you created the ``configuration`` directory.
+   - i.e. Run: ``cd hostpath``, not `cd hostpath/configuration`
+1. Run: ``kubechain create config -b burrow -k gce``
+1. Run: ``kubechain create cluster -b burrow -k gce``
+1. Verify that the cluster is operational by your preferred means.

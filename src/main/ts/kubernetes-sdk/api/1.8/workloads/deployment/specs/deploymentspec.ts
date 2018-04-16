@@ -6,6 +6,8 @@ import IVolume from "../../../configuration-storage/storage/volumes/ivolume";
 import ILabels from "../../pod/template/ilabels";
 import PodTemplateSpec from "../../pod/template/podtemplatespec";
 import PodSpec from "../../pod/podspec";
+import Affinity from "../../pod/affinity/affinity";
+import PodSecurityContext from "../../pod/securitycontext";
 
 export default class DeploymentSpec implements IDeploymentSpec, ILabels {
     private selector: LabelSelector;
@@ -44,8 +46,16 @@ export default class DeploymentSpec implements IDeploymentSpec, ILabels {
         this.template.setSubDomain(subDomain);
     }
 
+    setAffinity(affinity: Affinity): void {
+        this.template.setAffinity(affinity);
+    }
+
     setRestartPolicy(policy: string): void {
         //TODO: Implement
+    }
+
+    setPodSecurityContext(podSecurityContext: PodSecurityContext): void {
+        this.template.setPodSecurityContext(podSecurityContext);
     }
 
     addInitContainer(container: IContainer): void {

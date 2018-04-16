@@ -1,21 +1,21 @@
 import ChainConfigurationCreator from "./blockchain/configuration/create";
 import IAdapter from "../utilities/iadapter";
-import MinikubeAdapter from "./adapters/minikube/minikube";
+import MinikubeAdapter from "./adapters/minikube/adapter";
+import KubechainTargets from "../../targets";
+import GceAdapter from "./adapters/gce/adapter";
 
 export default class ConfigurationCreator implements IAdapter {
     private adapters: IAdapter[];
-    private kubernetesTarget: string;
 
-    constructor(kubernetesTarget: string) {
-        this.adapters = [new MinikubeAdapter()];
-        this.kubernetesTarget = kubernetesTarget;
+    constructor() {
+        this.adapters = [new MinikubeAdapter(), new GceAdapter()];
     }
 
-    async start() {
+    async start(targets: KubechainTargets) {
         try {
-            await new ChainConfigurationCreator().create();
-            const adapter = this.getAdapter(this.kubernetesTarget);
-            await adapter.start();
+            await new ChainConfigurationCreator().create(targets);
+            const adapter = this.getAdapter(targets);
+            await adapter.start(targets);
             return Promise.resolve();
         }
         catch (e) {
@@ -32,6 +32,10 @@ export default class ConfigurationCreator implements IAdapter {
         return this.targetMatchesOneOfAdapters(target);
     }
 
+    matchesTargets(targets: KubechainTargets): boolean {
+        return this.targetsMatchOneOfAdapters(targets);
+    }
+
     targetMatchesOneOfAdapters(target: string) {
         let matches = false;
         this.adapters.forEach((adapter: IAdapter) => {
@@ -42,17 +46,23 @@ export default class ConfigurationCreator implements IAdapter {
         return matches;
     }
 
-    private getAdapter(target: string): IAdapter {
+    private targetsMatchOneOfAdapters(target: KubechainTargets) {
+        let matches = false;
+        this.adapters.forEach((adapter: IAdapter) => {
+            if (adapter.matchesTargets(target)) {
+                matches = true;
+            }
+        });
+        return matches;
+    }
+
+    private getAdapter(targets: KubechainTargets): IAdapter {
         let targetAdapter = undefined;
         this.adapters.forEach((adapter: IAdapter) => {
-            if (adapter.matchesKubernetesTarget(target)) {
+            if (adapter.matchesTargets(targets)) {
                 targetAdapter = adapter;
             }
         });
         return targetAdapter;
-    }
-
-    async create() {
-
     }
 }

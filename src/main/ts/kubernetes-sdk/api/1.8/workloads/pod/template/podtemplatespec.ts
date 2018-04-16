@@ -3,6 +3,8 @@ import IPodSpec from "../ipodspec";
 import ObjectMeta from "../../../meta/objectmeta";
 import IContainer from "../../container/icontainer";
 import IVolume from "../../../configuration-storage/storage/volumes/ivolume";
+import Affinity from "../affinity/affinity";
+import PodSecurityContext from "../securitycontext";
 
 export default class PodTemplateSpec implements IPodTemplateSpec {
     private spec: IPodSpec;
@@ -29,8 +31,16 @@ export default class PodTemplateSpec implements IPodTemplateSpec {
         this.spec.setSubDomain(subdomain);
     }
 
+    setAffinity(affinity: Affinity): void {
+        this.spec.setAffinity(affinity);
+    }
+
     setRestartPolicy(policy: string): void {
         //TODO: Implement
+    }
+
+    setPodSecurityContext(podSecurityContext: PodSecurityContext): void {
+        this.spec.setPodSecurityContext(podSecurityContext);
     }
 
     addInitContainer(container: IContainer): void {

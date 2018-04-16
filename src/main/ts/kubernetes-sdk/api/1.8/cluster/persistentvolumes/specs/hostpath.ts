@@ -1,7 +1,6 @@
 import PersistentVolumeSpec from "./persistentvolumespec";
 import IPersistentVolumeSpec from "./ipersistentvolumespec";
 import IHostPathVolumeSource from "../../../configuration-storage/storage/volumes/volumesources/hostpath/ihostpathvolumesource";
-import TypelessHostPathVolumeSource from "../../../configuration-storage/storage/volumes/volumesources/hostpath/typeless";
 
 export default class HostPathPersistentVolumeSpec implements IPersistentVolumeSpec {
     private persistentVolumeSpec: PersistentVolumeSpec;

@@ -1,8 +1,8 @@
 {
   "name": "kubechain",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "",
-  "main": "./src/main/js/index.js",
+  "main": "./src/main/lib/index.js",
   "bin": {
     "kubechain": "./src/bin/kubechain"
   },
@@ -11,17 +11,18 @@
     "url": "https://github.com/kubechain/kubechain.git"
   },
   "dependencies": {
-    "@types/es6-shim": "^0.31.35",
+    "@types/es6-shim": "^0.31.36",
     "download": "^6.2.5",
     "fs-extra": "^5.0.0",
-    "globby": "^8.0.0",
+    "globby": "^8.0.1",
+    "inquirer": "^5.2.0",
     "jsonpath": "^1.0.0",
-    "kubernetes-client": "^3.18.1",
+    "kubernetes-client": "^5.2.0",
     "shelljs": "^0.8.1",
     "toml": "^2.3.3",
     "tomlify-j0.4": "^3.0.0",
     "uuid": "^3.2.1",
-    "yargs": "^11.0.0"
+    "yargs": "^11.1.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -29,11 +30,13 @@
   "author": "Robert Diebels",
   "license": "GPL-3.0-only",
   "devDependencies": {
-    "@types/fs-extra": "^5.0.0",
+    "@types/fs-extra": "^5.0.1",
     "@types/globby": "^6.1.0",
-    "@types/node": "^9.4.6",
+    "@types/inquirer": "0.0.41",
+    "@types/node": "^9.6.2",
     "@types/shelljs": "^0.7.8",
     "@types/uuid": "^3.4.3",
-    "typescript": "^2.7.2"
+    "@types/yargs": "^11.0.0",
+    "typescript": "^2.8.1"
   }
 }

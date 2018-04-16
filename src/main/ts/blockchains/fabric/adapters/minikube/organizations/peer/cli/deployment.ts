@@ -75,29 +75,13 @@ export default class CommandLineInterfaceDeployment {
         const funnelContainer = new Container("funnel", "kubechain/funnel:1.1.0");
 
         this.organization.addPeerAdminConfigurationToContainer(funnelContainer, funnelFromMountPath);
-        // const funnelVolumeMap = this.organization.findVolumesAndVolumeMountsFor(pathToMatch, funnelFromMountPath); //TODO: Fix this.
-        // funnelVolumeMap.volumeMounts.forEach((volumeMount: VolumeMount) => {
-        //     funnelContainer.addVolumeMount(volumeMount);
-        // });
 
         const funnelToMountPath = Path.posix.join(funnelBasePath, 'to');
         this.organization.addCliMspConfigurationToContainer(funnelContainer, funnelToMountPath);
-        // const toVolumeMount = this.organizationVolume.toVolumeMount(funnelToMountPath);
-        // toVolumeMount.setSubPath(this.mspPath());
-        // funnelContainer.addVolumeMount(toVolumeMount);
-
-
         this.organization.addPeerAdminConfigurationAsVolumes(this.deployment);
-        // funnelVolumeMap.volumes.map((volume: IVolume) => {
-        //     this.deployment.addVolume(volume);
-        // });
 
         this.deployment.addInitContainer(funnelContainer);
     }
-
-    // private mspPath() {
-    //     return Path.posix.join('users', `Admin@${this.organization.name()}`, 'msp');//TODO: Fix this.
-    // }
 
     private createHyperledgerContainer() {
         const peerAddress = "peer0." + this.organization.name() + ":7051";
@@ -108,7 +92,7 @@ export default class CommandLineInterfaceDeployment {
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_LOGGING_LEVEL", "DEBUG"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_ID", this.name));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_ADDRESS", peerAddress));
-        hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_LOCALMSPID", this.organization.mspID())); //TODO: Fix this
+        hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_LOCALMSPID", this.organization.mspID()));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_MSPCONFIGPATH", "/etc/hyperledger/fabric/msp"));
         hyperledgerContainer.setWorkingDirectory("/opt/gopath/src/github.com/hyperledger/fabric/peer");
         hyperledgerContainer.addCommand("/bin/bash");
@@ -123,9 +107,6 @@ export default class CommandLineInterfaceDeployment {
 
         const hyperLedgerMountPath = Path.posix.join(Path.posix.sep, 'etc', 'hyperledger', 'fabric', 'msp');
         this.organization.addCliMspConfigurationToContainer(hyperledgerContainer, hyperLedgerMountPath);
-        // const mspVolumeMount = this.organizationVolume.toVolumeMount(hyperLedgerMountPath);
-        // mspVolumeMount.setSubPath(this.mspPath());
-        // hyperledgerContainer.addVolumeMount(mspVolumeMount);
         //TODO: Check usage of channel-artifacts
         hyperledgerContainer.addVolumeMount(this.artifactsVolume.toVolumeMount("/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts"));
 

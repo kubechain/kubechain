@@ -1,7 +1,10 @@
+import KubechainTargets from "./targets";
+
 const path = require('path');
 const jsonpath = require('jsonpath');
 
 interface KubechainOptions {
+    targets: KubechainTargets
     paths: {
         root: string
         configuration: string
@@ -13,13 +16,24 @@ interface KubechainOptions {
 export default class Kubechain {
     private options: KubechainOptions;
 
-    constructor() {
+    constructor(targets: KubechainTargets) {
         this.options = Kubechain._defaults();
+        if (targets) {
+            this.options.targets = targets;
+        }
     }
 
     static _defaults(): KubechainOptions {
         const cwd = process.cwd();
         return {
+            targets: {
+                blockchain: {
+                    name: ""
+                },
+                kubernetes: {
+                    name: ""
+                }
+            },
             paths: {
                 root: cwd,
                 configuration: path.join(cwd, 'configuration'),

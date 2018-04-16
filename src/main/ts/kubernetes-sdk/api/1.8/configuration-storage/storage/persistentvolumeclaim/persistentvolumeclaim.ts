@@ -1,6 +1,6 @@
 import ObjectMeta from '../../../meta/objectmeta';
 import IPersistentVolumeClaimSpec from "./ipersistentvolumeclaimspec";
-import PersistentVolumeClaimVolumeSource from "../volumes/volumesources/persistentvolumeclaimvolumesource";
+import PersistentVolumeClaimVolumeSource from "../volumes/volumesources/persistentvolumeclaim";
 import IVolumeSource from "../volumes/volumesources/ivolumesource";
 import PersistentVolumeClaimSpec from "./persistentvolumeclaimspec";
 import IResourceRequirements from "../../../meta/iresourcerequirements";

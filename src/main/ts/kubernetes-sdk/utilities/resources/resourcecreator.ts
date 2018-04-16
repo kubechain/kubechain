@@ -3,34 +3,29 @@ import * as KubernetesClient from 'kubernetes-client'
 import KubernetesResourceGatherer from './resourcegatherer';
 import * as Kinds from '../kinds/kinds'
 import IKind from "../kinds/ikind";
-import Deployment from "../kinds/namespaced/deployment";
 import PersistentVolumeClaim from "../kinds/namespaced/persistentvolumeclaim";
+import {kindIsWorkload} from "../kinds/kinds";
+import CrudResource, {default as CrudResource} from "./crud/crud-resource";
 
 export default class KubernetesResourceCreator {
     private namespace: string;
     private doNotCreateKinds: any[];
     private gatherer: KubernetesResourceGatherer;
-    private kubernetesCoreClient: any;
-    private kubernetesApiClient: KubernetesClient.Api;
     private resourcePathsGroupedByKind: any;
+    private client: any;
 
-    constructor(namespace: string) {
+    constructor(namespace: string, context: string) {
         this.namespace = namespace;
         this.doNotCreateKinds = [];
-        this.gatherer = new KubernetesResourceGatherer(this.namespace);
-        this.kubernetesCoreClient = new KubernetesClient.Core({
-            url: 'http://localhost:8001', //TODO: Might want to make this an option.
-            version: 'v1',
-            namespace: namespace,
-            promises: true
-        });
+        this.gatherer = new KubernetesResourceGatherer();
 
-        this.kubernetesApiClient = new KubernetesClient.Api({
-            url: 'http://localhost:8001',
-            promises: true,
-            namespace: namespace
+        const Client = KubernetesClient.Client;
+        const config = KubernetesClient.config;
+        //TODO: Context picker.
+        this.client = new Client({
+            config: config.fromKubeconfig(undefined, context),
+            version: '1.8'
         });
-
     }
 
     doNotCreateKind(kind: string) {
@@ -75,7 +70,8 @@ export default class KubernetesResourceCreator {
             console.info(`Creating ${kind} resources.`);
             try {
                 await KubernetesResourceCreator.createResources(this.resourcePathsGroupedByKind[kind.toString()], kind.toString(), (resource: any) => {
-                    return this.kubernetesCoreClient[kind.toString().toLowerCase()].post({body: resource});
+                    const crudResource = new CrudResource(resource, kind);
+                    return crudResource.post(this.client);
                 });
             }
             catch (error) {
@@ -94,11 +90,12 @@ export default class KubernetesResourceCreator {
             console.info(`Creating ${kind.toString()} resources.`);
             try {
                 const resourcePaths = this.resourcePathsGroupedByKind[kind.toString()];
-                if (kind.toString() === Deployment.toString() && resourcePaths.length > 0) {
+                if (kindIsWorkload(kind.toString()) && resourcePaths.length > 0) {
                     await this.checkPersistentVolumeClaimsStatusIsBound()
                 }
                 await KubernetesResourceCreator.createResources(resourcePaths, kind.toString(), (resource: any) => {
-                    return this.kubernetesApiClient.group(resource).namespaces.kind(resource).post({body: resource});
+                    const crudresource = new CrudResource(resource, kind);
+                    return crudresource.post(this.client);
                 });
             }
             catch (error) {
@@ -111,18 +108,19 @@ export default class KubernetesResourceCreator {
 
     private async checkPersistentVolumeClaimsStatusIsBound() {
         console.info("Checking if PersistentVolumeClaims have been bound.");
-        const persistentVolumeClaimPaths = this.resourcePathsGroupedByKind[PersistentVolumeClaim.toString()];
-        for (let index = 0; index < persistentVolumeClaimPaths.length; index++) {
-            try {
-                const persistentVolumeClaim = JSON.parse(fs.readFileSync(persistentVolumeClaimPaths[index]).toString());
-                console.info('Checking claim:', persistentVolumeClaim.metadata.name);
-                await this.requestPersistentVolumeClaimWithRetry(persistentVolumeClaim);
-            }
-            catch (e) {
-                console.error(e);
+        const persistentVolumeClaimPaths = this.resourcePathsGroupedByKind[new PersistentVolumeClaim().toString()];
+        if (persistentVolumeClaimPaths) {
+            for (let index = 0; index < persistentVolumeClaimPaths.length; index++) {
+                try {
+                    const persistentVolumeClaim = JSON.parse(fs.readFileSync(persistentVolumeClaimPaths[index]).toString());
+                    console.info('Checking claim:', persistentVolumeClaim.metadata.name);
+                    await this.requestPersistentVolumeClaimWithRetry(persistentVolumeClaim);
+                }
+                catch (e) {
+                    console.error(e);
+                }
             }
         }
-
         return Promise.resolve();
     }
 
@@ -130,26 +128,40 @@ export default class KubernetesResourceCreator {
         const MAX_RETRIES = 10;
         for (let i = 0; i <= MAX_RETRIES; i++) {
             try {
-                const response = await this.kubernetesCoreClient.namespaces.persistentvolumeclaims.get(persistentVolumeClaim.metadata.name);
-                if (response && KubernetesResourceCreator.claimIsBound(response)) {
+                const resource = new CrudResource(persistentVolumeClaim, new PersistentVolumeClaim());
+                const response = await resource.get(this.client);
+                if (response && KubernetesResourceCreator.claimIsBound(response.body)) {
                     console.info(`Claim ${persistentVolumeClaim.metadata.name}: Has been bound.`);
                     return Promise.resolve(response);
                 }
+                else {
+                    await this.retry(i, undefined);
+                }
 
             } catch (err) {
-                console.error(err);
-                const timeout = Math.pow(2, i);
-                console.log('Waiting:', timeout, 'ms');
-                setTimeout(() => {
-                }, timeout);
-                console.log('Retrying');
+                await this.retry(i, err);
             }
         }
         return Promise.reject(`Binding for "${persistentVolumeClaim.metadata.name}" could not be found.`);
     }
 
-    static claimIsBound(response: any) {
-        return response && response.status && response.status.phase && response.status.phase === "Bound";
+    retry(retries: number, error: string) {
+        return new Promise(((resolve) => {
+            if (error) {
+                console.error(error);
+            }
+            const timeout = Math.pow(100, retries);
+            console.log('Waiting:', timeout, 'ms');
+            setTimeout(() => {
+                resolve()
+            }, timeout);
+            console.log('Retrying');
+        }))
+    }
+
+
+    static claimIsBound(responseBody: any) {
+        return responseBody && responseBody.status && responseBody.status.phase && responseBody.status.phase === "Bound";
     }
 
     static async createResources(resourcePaths: any, kind: string, createFunction: Function) {
@@ -157,7 +169,8 @@ export default class KubernetesResourceCreator {
             const resourcePath = resourcePaths[index];
             const resource = JSON.parse(fs.readFileSync(resourcePath).toString());
             try {
-                await createFunction(resource);
+                await
+                    createFunction(resource);
                 console.info(`Successfully created ${kind}: ${resource.metadata.name}`);
             }
             catch (error) {

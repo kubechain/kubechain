@@ -12,6 +12,7 @@ import * as Architectures from '../../utilities/host/architectures/architectures
 import {createDirectories, findShellDependencies} from "../../../../util";
 import IArchitecture from "../../utilities/host/architectures/iarchitecture";
 import {executeCommand} from "../../../utilities/shellcommand";
+import KubechainTargets from "../../../../targets";
 
 export default class ChainConfigurationCreator implements ICommandExecutor {
     private kubechain: Kubechain;
@@ -21,12 +22,9 @@ export default class ChainConfigurationCreator implements ICommandExecutor {
         return chain === 'fabric';
     }
 
-    constructor() {
-        this.kubechain = new Kubechain();
+    async create(targets: KubechainTargets) {
+        this.kubechain = new Kubechain(targets);
         this.options = new Options(this.kubechain);
-    }
-
-    async create() {
         return new Promise(async (resolve, reject) => {
             try {
                 console.info('[FABRIC CONFIGURATION]');

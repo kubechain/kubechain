@@ -4,21 +4,22 @@ import Options from '../../options';
 import ICommandExecutor from "../../../utilities/icommandexecutor";
 import Kubechain from '../../../../kubechain';
 import KubernetesResourceDeleter from '../../../../kubernetes-sdk/utilities/resources/resourcedeleter';
+import KubechainTargets from "../../../../targets";
+import {promptUserForDesiredContext} from "../../../utilities/cluster";
 
 export default class ClusterDeleter implements ICommandExecutor {
     private options: Options;
-
-    constructor() {
-        this.options = new Options(new Kubechain());
-    }
+    private context: string;
 
     validCommandForChain(chain: string): boolean {
         return chain === 'fabric';
     }
 
-    async delete() {
+    async delete(targets: KubechainTargets) {
+        this.options = new Options(new Kubechain(targets));
         try {
             console.info('[REMOVING]');
+            this.context = await promptUserForDesiredContext();
             await this.removeOrdererOrganizations();
             await this.deletePeerOrganizations();
         }
@@ -50,7 +51,7 @@ export default class ClusterDeleter implements ICommandExecutor {
 
     private deleteOrganization(basePath: string, name: string) {
         const organizationPath = path.join(basePath, name);
-        const resourceDeleter = new KubernetesResourceDeleter(name);
+        const resourceDeleter = new KubernetesResourceDeleter(name, this.context);
         return resourceDeleter.deleteResourcesFoundInDirectoryTree(organizationPath);
     }
 }

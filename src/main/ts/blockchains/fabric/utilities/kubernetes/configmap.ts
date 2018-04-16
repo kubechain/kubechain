@@ -4,7 +4,6 @@ import {parseDirectoryTree} from "../../../../util";
 import ConfigMapTuples from "./configmaptuples";
 import ConfigMapTuple from "./configmaptuple";
 import {namespacedUuid} from "../../../../kubernetes-sdk/utilities/naming";
-import * as uuidv5 from "uuid/v5";
 
 function directoryTreeToConfigMapTuples(rootPath: string, namespace: string): ConfigMapTuples {
     const tuples = new ConfigMapTuples(rootPath);

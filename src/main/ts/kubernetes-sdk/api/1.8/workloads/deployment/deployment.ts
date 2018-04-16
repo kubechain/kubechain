@@ -3,6 +3,8 @@ import IDeploymentSpec from "./specs/ideploymentspec";
 import DeploymentSpec from "./specs/deploymentspec";
 import IContainer from "../container/icontainer";
 import IVolume from "../../configuration-storage/storage/volumes/ivolume";
+import Affinity from "../pod/affinity/affinity";
+import PodSecurityContext from "../pod/securitycontext";
 
 export default class Deployment implements IDeploymentSpec {
     private metadata: ObjectMeta;
@@ -35,8 +37,16 @@ export default class Deployment implements IDeploymentSpec {
         this.spec.setSubDomain(subdomain);
     }
 
+    setAffinity(affinity: Affinity): void {
+        this.spec.setAffinity(affinity);
+    }
+
     setRestartPolicy(policy: string): void {
         //TODO: Implement
+    }
+
+    setPodSecurityContext(podSecurityContext: PodSecurityContext): void {
+        this.spec.setPodSecurityContext(podSecurityContext)
     }
 
     addInitContainer(container: IContainer): void {

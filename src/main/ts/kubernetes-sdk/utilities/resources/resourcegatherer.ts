@@ -5,12 +5,10 @@ import * as Kinds from '../kinds/kinds';
 
 
 export default class KubernetesResourceGatherer {
-    private namespace: string;
     private doNotCreateKinds: string[];
     private resourcesPathsGroupedByKind: any;
 
-    constructor(namespace: string) {
-        this.namespace = namespace;
+    constructor() {
         this.doNotCreateKinds = [];
         this.resourcesPathsGroupedByKind = this.initializeResourcepathGroups();
     }

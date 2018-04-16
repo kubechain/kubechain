@@ -1,7 +1,11 @@
 import IKind from "../ikind";
 
 export default class Pod implements IKind {
-    static toString() {
+    toPlural(): string {
+        return "Pods";
+    }
+
+    toString() {
         return "Pod";
     }
 }

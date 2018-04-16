@@ -12,7 +12,6 @@ export default class Architecture implements IArchitecture {
         return this.architecture === OS.arch();
     }
 
-    //TODO: Figure out where this is used.
     name() {
         return this.architecture;
     }

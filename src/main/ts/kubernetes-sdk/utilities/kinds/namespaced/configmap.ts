@@ -1,7 +1,11 @@
 import IKind from "../ikind";
 
 export default class ConfigMap implements IKind {
-    static toString() {
+    toPlural(): string {
+        return "ConfigMaps";
+    }
+
+    toString() {
         return "ConfigMap";
     }
 }

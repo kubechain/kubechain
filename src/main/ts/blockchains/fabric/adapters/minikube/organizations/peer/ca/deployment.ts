@@ -1,7 +1,6 @@
 import * as Path from 'path';
 import Deployment from "../../../../../../../kubernetes-sdk/api/1.8/workloads/deployment/deployment";
 import Options from "../../../../../options";
-import IVolume from "../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/ivolume";
 import Container from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
 import EnvVar from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
 import ContainerPort from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
@@ -40,19 +39,10 @@ export default class CertificateAuthorityDeployment {
 
         const funnelFromMountPath = Path.posix.join(funnelBasePath, 'from');
         this.organization.addCertificateAuthorityConfigurationToContainer(funnelContainer, funnelFromMountPath);
-        // const configMap = directoryToConfigMap(this.representation.path, uuidv5("ca-" + this.organization.name(), this.organization.namespace()), this.organization.namespace());
-        // // this.organization.directoriesToConfigMaps()['ca'];        //TODO: Fix this
-        // const configMapVolume = configMap.toVolume();
-        // funnelContainer.addVolumeMount(configMapVolume.toVolumeMount(funnelFromMountPath));
-
 
         const funnelToMountPath = Path.posix.join(funnelBasePath, 'to');
         this.organization.addCertificateAuthorityConfigurationFromVolume(funnelContainer, funnelToMountPath);
-        // const toVolumeMount = this.organizationVolume.toVolumeMount(funnelToMountPath);
-        // toVolumeMount.setSubPath(CertificateAuthorityDeployment.caPath());
-        // funnelContainer.addVolumeMount(toVolumeMount);
 
-        // this.deployment.addVolume(configMapVolume);
         this.organization.addCertificateAuthorityConfigurationAsVolumes(this.deployment);
         this.deployment.addInitContainer(funnelContainer);
     }
@@ -72,9 +62,6 @@ export default class CertificateAuthorityDeployment {
         hyperledgerCaContainer.addArgument(` fabric-ca-server start --ca.certfile ${caCertFile} --ca.keyfile ${caKeyFile} -b admin:adminpw -d `);
 
         this.organization.addCertificateAuthorityConfigurationFromVolume(hyperledgerCaContainer, CertificateAuthorityDeployment.hyperledgerMountPath());
-        // const volumeMount = this.organizationVolume.toVolumeMount(CertificateAuthorityDeployment.hyperledgerMountPath());
-        // volumeMount.setSubPath(CertificateAuthorityDeployment.caPath());
-        // hyperledgerCaContainer.addVolumeMount(volumeMount);
 
         this.deployment.addContainer(hyperledgerCaContainer);
     }

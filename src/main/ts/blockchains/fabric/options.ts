@@ -4,6 +4,7 @@ import * as Path from 'path';
 import Kubechain from "../../kubechain";
 
 interface FabricOptions {
+    name: string
     version: string
     configuration: {
         paths: {
@@ -41,16 +42,21 @@ export default class Options {
     private options: FabricOptions;
 
     constructor(kubechain: Kubechain) {
-        this.kubechain = kubechain || new Kubechain();
+        this.kubechain = kubechain || new Kubechain({blockchain: {name: 'fabric'}, kubernetes: {name: 'minikube'}});
         this.options = this.defaults();
     }
 
+    private name(): string {
+        return `${this.kubechain.get('$.targets.blockchain.name')}-${this.kubechain.get('$.targets.kubernetes.name')}`;
+    }
+
     private defaults(): FabricOptions {
-        const configurationRoot = Path.join(this.kubechain.get('$.paths.configuration'), 'fabric');
-        const blockchainRoot = Path.join(this.kubechain.get('$.paths.blockchains'), 'fabric');
+        const configurationRoot = Path.join(this.kubechain.get('$.paths.configuration'), this.kubechain.get('$.targets.blockchain.name'));
+        const blockchainRoot = Path.join(this.kubechain.get('$.paths.blockchains'), this.kubechain.get('$.targets.blockchain.name'));
         const organizationsRoot = Path.join(blockchainRoot, 'crypto-config');
-        const kubernetesRoot = Path.join(this.kubechain.get('$.paths.kubernetes'), 'fabric');
+        const kubernetesRoot = Path.join(this.kubechain.get('$.paths.kubernetes'), this.name());
         return {
+            name: this.name(),
             version: '1.0.4',
             configuration: {
                 paths: {

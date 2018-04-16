@@ -1,16 +1,17 @@
 import KubernetesConfigurationDeleter from "./kubernetes/configuration/delete";
 import ICommandExecutor from "../utilities/icommandexecutor";
+import ChainConfigurationDeleter from "./blockchain/configuration/delete";
+import KubechainTargets from "../../targets";
 
-export default class FabricConfigurationDeleter implements ICommandExecutor {
+export default class ConfigurationDeleter implements ICommandExecutor {
     validCommandForChain(chain: string): boolean {
         return chain === 'fabric';
     }
 
-    delete() {
+    delete(targets: KubechainTargets) {
         try {
-            new KubernetesConfigurationDeleter().delete();
-            //TODO: Implement target option
-            // new ChainConfigurationDeleter().delete();
+            new KubernetesConfigurationDeleter().delete(targets);
+            new ChainConfigurationDeleter().delete(targets);
         }
         catch (e) {
             console.error("Unable to delete all fabric configuration.");

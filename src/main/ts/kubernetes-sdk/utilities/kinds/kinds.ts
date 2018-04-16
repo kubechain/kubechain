@@ -9,6 +9,13 @@ import Pod from "./namespaced/pod";
 import Secret from "./namespaced/secret";
 import Service from "./namespaced/service";
 import StatefulSet from "./namespaced/statefulset";
+import ClusterRole from "./cluster/clusterrole";
+import ClusterRoleBinding from "./cluster/clusterrolebinding";
+import StorageClass from "./cluster/storageclass";
+import CustomResourceDefinition from "./cluster/customeresourcedefinition";
+import ServiceAccount from "./cluster/serviceaccount";
+
+//TODO: Change to Enum.
 
 function asStrings(): string[] {
     const strings: string[] = [];
@@ -24,8 +31,12 @@ function asStrings(): string[] {
 
 function kindsWithoutNamespace(): IKind[] {
     return [
-        Namespace,
-        PersistentVolume
+        new Namespace(),
+        new PersistentVolume(),
+        new StorageClass(),
+        new CustomResourceDefinition(),
+        new ClusterRoleBinding(),
+        new ClusterRole()
     ];
 }
 
@@ -35,13 +46,23 @@ function kindIsNamespaced(kind: string): boolean {
     })) === undefined;
 }
 
+function kindIsWorkload(kind: string): boolean {
+    const workloads: IKind[] = [new Pod(), new Deployment()];
+    for (let i = 0; i < workloads.length; i++) {
+        if (kind === workloads[i].toString()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function kindsWithNamespace(): IKind[] {
-    return [Secret, ConfigMap, PersistentVolumeClaim, Service, StatefulSet, Pod, Deployment, Job];
+    return [new ServiceAccount(), new Secret(), new ConfigMap(), new PersistentVolumeClaim(), new Service(), new StatefulSet(), new Pod(), new Deployment(), new Job()];
 }
 
 function isKind(kindToValidate: string) {
-    const found = asStrings().find((kind: IKind) => {
-        return kindToValidate === kind.toString();
+    const found = asStrings().find((kind: string) => {
+        return kindToValidate === kind;
     });
     return found !== undefined;
 }
@@ -51,5 +72,6 @@ export {
     kindsWithoutNamespace,
     kindIsNamespaced,
     kindsWithNamespace,
-    isKind
+    isKind,
+    kindIsWorkload
 }

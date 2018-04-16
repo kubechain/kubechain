@@ -40,15 +40,15 @@ As of right now Kubechain is intented to be used via the CLI. Blockchain adapter
   - Creates the kubernetes resources.
 - ``create config [blockchain-target:b] [kubernetes-target:k]``
   - Creates all the configuration necessary to create a Kubernetes resources.
-- ``create cluster <chain>``
+- ``create cluster [blockchain-target:b] [kubernetes-target:k]``
   - Creates a Kubernetes cluster from previously created Kubernetes resources.
 - ``delete chain-config <chain>``
   - Deletes existing blockchain configuration from the CLI host.
-- ``delete kubernetes-config <chain>``
+- ``delete kubernetes-config [blockchain-target:b] [kubernetes-target:k]``
   - Deletes existing Kubernetes resources from the CLI host.
-- ``delete config <chain>``
+- ``delete config [blockchain-target:b] [kubernetes-target:k]``
   - Deletes all existing configuration from the CLI host.
-- ``delete cluster <chain>``
+- ``delete cluster [blockchain-target:b] [kubernetes-target:k]``
   - Deletes the [running] Kubernetes cluster using previously created Kubernetes resources.
 
 In the above ``<chain>`` is the name of the blockchain you wish to ``target``.
@@ -57,31 +57,18 @@ See the Targets section for a list of supported blockchain targets.
 #### Targets
 
 #### Blockchains
-Currently supported blockchain targets for the ``chain`` argument are:
+Currently supported blockchain targets for the ``chain`` and `[blockchain-target:b]` arguments are:
 
-- ``fabric``, [Hyperledger Fabric](https://github.com/hyperledger/fabric).
-- ``burrow``, [Hyperledger Burrow](https://github.com/hyperledger/burrow).
+- ``fabric``, [Hyperledger Fabric](https://github.com/hyperledger/fabric/).
+- ``burrow``, [Hyperledger Burrow](https://github.com/hyperledger/burrow/).
 
 Hyperledger Burrow (``burrow``) support is in the works.
 
 #### Kubernetes 
-Currently supported Kubernetes targets are:
+Currently supported Kubernetes targets for the `[kubernetes-target:k]` argument are:
 
-- Minikube
-
-**Target configuration**
-
-Release 0.3.0 introduced an abstraction enabling other kubernetes-targets. 
-AWS support will be available in release 0.4.0. 
-
-**Reasoning**
-
-Kubechains code supports targeting a specific cluster URL. 
-However, each Kubernetes target supports different Kubernetes resources.
-For example, AWS and Minikube both limit PersistentVolumes in their own way.
-
-Supporting all possible Kubernetes targets requires BlockchainAdapters to have configurable components.
-This is something I'm working towards.
+- `minikube`, [Minikube](https://github.com/kubernetes/minikube/)
+- `gce`, [Goocle Cloud Engine](https://cloud.google.com/)
 
 #### Paths
 Below you can find some useful information about the paths Kubechain creates or requires.
@@ -109,8 +96,6 @@ Below you find an example of a directory tree for Hyperledger Fabric and the cor
         - cryptogen
       - crypto-config
         - ...
-      - intermediate <- intermediate representations for organizations
-        - orgN.json...
   - kubernetes <- final result
     - fabric
 
@@ -119,38 +104,71 @@ For all available tutorials check out [the tutorial documentation](https://githu
 
 ### Creating a Hyperledger Fabric cluster on Minikube
 
-**Pre-requisites**
+#### Pre-requisites
 - You've installed NodeJS (version 8 and higher) and NPM.
 - You've installed Minikube and added it to the PATH variable on your system.
 - You've installed Kubectl and added it to the PATH variable on your system.
 
-**Setup the environment**
+#### Setup the environment
 1. Open a terminal/console.
 1. Run: ``npm install -g kubechain``
 1. Run: ``minikube start``
-1. Run: ``kubectl proxy``
-   - Do not forget to proxy. Kubechain does not support picking a Kubernetes cluster.
 
-**Hyperledger Fabric configuration**
+#### Hyperledger Fabric configuration
 1. At a preferred ``hostpath`` create a new directory named ``configuration``.
 1. Create sub-directory named ``fabric`` in the ``configuration`` directory.
 1. Add the standard Hyperledger Fabric configuration files to the ``fabric`` directory.
    - These are ``configtx.yaml`` and ``crypto-config.yaml``.
 
-**Create the Kubernetes Cluster**
+#### Create the Kubernetes Cluster
 1. Open a new terminal/console.
 1. Change your current directory to the ``hostpath`` where you created the ``configuration`` directory.
    - i.e. Run: ``cd hostpath``, not `cd hostpath/configuration`
 1. Run: ``kubechain create config -b fabric -k minikube``
-1. Run: ``kubechain create cluster fabric``
+1. Run: ``kubechain create cluster -b fabric -k minikube``
 1. Verify that the cluster is operational by your preferred means.
-
-# Alternatives
-An alternative to this project would be using [Helm Charts](https://helm.sh).
-You could have a look at [Burrow's helm charts](https://hub.kubeapps.com/charts/incubator/burrow) and see if they fit your needs.
-Hyperledger Fabric does not have any helm charts available as far as I'm aware.
 
 # Support
 As of right now I'm doing this project on my own as it is part of my Master Thesis.
 Currently I do not have the time to elaborately answer questions about Kubechain nor provide full support.
 I'll try to answer as quickly as I can but don't count on instant replies.
+
+# Alternatives
+
+## Helm
+One problem with Kubechain is providing support for all possible Kubernetes targets.
+This would require Kubechain to have fully configurable components.
+This is exactly to what [Helm, Kubernetes's package manager](https://helm.sh/), does.
+Helm takes files from a file system and converts those to Kubernetes resources using a mapping concept called [Charts](https://docs.helm.sh/developing_charts/#charts).
+
+Helm Charts could potentially become be a replacement for Kubechain's adapters.
+
+### Why not use Helm than?
+
+#### Ease of use.
+Kubechain is intended to be a suite. It allows you to get everything done in one go without having to use a set of tools individually.
+
+#### Maintenance
+Blockchain maintainers know it's code inside out and are better suited to develop and maintain a set of charts.
+For instance, Hyperledger Burrow has it's own [set of charts](https://hub.kubeapps.com/charts/stable/burrow) developed and maintained by the team who created Burrow.
+
+A note on the Burrow charts. I tested them between 2-4-2018 and 12-4-2018 and they: 
+- Can't be generated on windows.
+- Do't function on AWS.
+- Don't function on GCE .
+- For both AWS and GCE I mimicked the setup file from [this repo](https://github.com/kubernetes/charts/tree/master/stable/burrow/examples/1.human_deployment/README.md).
+
+#### Code issues
+Hyperledger Fabric has some issue which require alternate settings on individual nodes. Some of these have been resolved, such as [FAB-7428](https://jira.hyperledger.org/browse/FAB-7428), others are still being worked upon.
+When I started to work on this project I had to work around these issues. Which I could only achieve by writing the code to do so myself.
+
+#### Lack of control
+Helm does not provide an API to interact with it. So I would have been forced to use shell commands, adding a dependency outside of Kubechain's management.
+This would have resulted in a lack of control over Kubechain's dependencies. Which I'm not a fan of.
+
+#### Effort. 
+Aside from what's listed above, Helm only came to my attention when I was already knee-deep in this project.
+Redirecting my efforts towards creating Helm charts instead of Adapters would have required me to familiarize myself with it's documentation and development tools.
+
+
+

@@ -50,27 +50,10 @@ export default class PeerDeployment {
 
         const funnelFromMountPath = Path.posix.join(PeerDeployment.funnelBaseMountPath(), 'from');
         this.organization.addPeerConfigurationToContainer(this.peer.name(), funnelContainer, funnelFromMountPath);
-        // const osPathToMatch = Path.join('peers', this.peer.name());
-        // const volumeConfig = this.organization.findVolumesAndVolumeMountsFor(osPathToMatch, funnelFromMountPath);
-        // volumeConfig.volumeMounts.forEach((volumeMount: VolumeMount) => {
-        //     funnelContainer.addVolumeMount(volumeMount);
-        // });
-        //TODO:
-        // volumeConfig.volumes.forEach((volume: IVolume) => {
-        //     this.deployment.addVolume(volume);
-        // });
 
         const funnelToMountPath = Path.posix.join(PeerDeployment.funnelBaseMountPath(), 'to');
         this.organization.addPeerConfigurationToOrganizationVolume(this.peer.name(), funnelContainer, funnelToMountPath);
         this.organization.addPeerConfigurationAsVolumes(this.peer.name(), this.deployment);
-        // this.organization.addPeerTlsToContainer(this.peer.name(), funnelContainer, Path.posix.join(funnelToMountPath, 'tls'));
-        // const tlsMount = this.organizationVolume.toVolumeMount(Path.posix.join(funnelToMountPath, 'tls'));
-        // tlsMount.setSubPath(this.tlsPath());
-        // this.organization.addPeerMspToContainer(this.peer.name(), funnelContainer, Path.posix.join(funnelToMountPath, 'msp'));
-        // const mspMount = this.organizationVolume.toVolumeMount(Path.posix.join(funnelToMountPath, 'msp'));
-        // mspMount.setSubPath(this.mspPath());
-        //
-        // funnelContainer.addVolumeMount(mspMount);
 
         this.deployment.addInitContainer(funnelContainer);
     }
@@ -115,13 +98,7 @@ export default class PeerDeployment {
         const hyperledgerMountPath = Path.posix.join(Path.posix.sep, 'etc', 'hyperledger', 'fabric');
 
         this.organization.addPeerTlsToContainer(this.peer.name(), hyperledgerPeerContainer, Path.posix.join(hyperledgerMountPath, 'tls'));
-        // const tlsMount = this.organizationVolume.toVolumeMount(Path.posix.join(hyperledgerMountPath, 'tls'));
-        // tlsMount.setSubPath(this.tlsPath());
-        // hyperledgerPeerContainer.addVolumeMount(tlsMount);
         this.organization.addPeerMspToContainer(this.peer.name(), hyperledgerPeerContainer, Path.posix.join(hyperledgerMountPath, 'msp'));
-        // const mspMount = this.organizationVolume.toVolumeMount(Path.posix.join(hyperledgerMountPath, 'msp'));
-        // mspMount.setSubPath(this.mspPath());
-        // hyperledgerPeerContainer.addVolumeMount(mspMount);
         const runHostPathVolumeMount = this.runHostPathVolume.toVolumeMount(Path.posix.join(Path.posix.sep, 'host', 'var', 'run', Path.posix.sep));
         hyperledgerPeerContainer.addVolumeMount(runHostPathVolumeMount);
         this.deployment.addContainer(hyperledgerPeerContainer);
@@ -129,14 +106,6 @@ export default class PeerDeployment {
 
     static funnelBaseMountPath() {
         return Path.posix.join(Path.posix.sep, 'usr', 'src', 'app');
-    }
-
-    private tlsPath(): string {
-        return Path.posix.join('peers', this.peer.name(), 'tls');
-    }
-
-    private mspPath(): string {
-        return Path.posix.join('peers', this.peer.name(), 'msp');
     }
 
     toJson() {

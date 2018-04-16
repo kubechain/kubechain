@@ -1,18 +1,11 @@
 import * as  Path from 'path';
 import Orderer from "./orderer";
-import Organization from "../organization";
 import Options from "../../../../options";
 import Deployment from "../../../../../../kubernetes-sdk/api/1.8/workloads/deployment/deployment";
 import Container from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
-import VolumeMount from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/volumemount";
-import IVolume from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/ivolume";
-import Secret from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/secret/secret";
 import EnvVar from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
 import ContainerPort from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
-import * as ConfigMapUtil from "../../../../../../kubernetes-sdk/utilities/1.8/configuration-storage/configuration/configmap";
-import ConfigMap from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
 import OrdererOrganization from "../orderer";
-import OpaqueSecret from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/secret/opaquesecret";
 import ConfigMapTuples from "../../../../utilities/kubernetes/configmaptuples";
 
 export default class OrdererDeployment {
@@ -58,8 +51,6 @@ export default class OrdererDeployment {
         this.organization.addGenesisBlockVolumeToContainer(funnelContainer, funnelFromMountPath);
 
         const funnelToMountPath = Path.posix.join(this.funnelBaseMountPath(), 'to');
-        // this.organization.addOrdererTlsToContainer(this.orderer.name(), funnelContainer, Path.posix.join(funnelToMountPath, 'tls'));
-        // this.organization.addOrdererMspToContainer(this.orderer.name(), funnelContainer, Path.posix.join(funnelToMountPath, 'msp'));
         this.organization.addGenesisBlockToOrganizationVolume(funnelContainer, Path.posix.join(funnelToMountPath, 'genesis'));
         this.organization.addOrdererConfigurationToOrganizationVolume(this.orderer.name(), funnelContainer, funnelToMountPath);
         this.deployment.addInitContainer(funnelContainer);

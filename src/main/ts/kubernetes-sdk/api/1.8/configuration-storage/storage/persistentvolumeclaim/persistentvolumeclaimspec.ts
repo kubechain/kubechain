@@ -13,7 +13,6 @@ export default class PersistentVolumeClaimSpec implements IPersistentVolumeClaim
 
     constructor() {
         this.accessModes = [];
-        this.labelSelector = new LabelSelector();
         this.resourceRequirements = new ResourceRequirements();
     }
 
@@ -26,6 +25,9 @@ export default class PersistentVolumeClaimSpec implements IPersistentVolumeClaim
     }
 
     addMatchLabel(key: any, value: any): void {
+        if (!this.labelSelector) {
+            this.labelSelector = new LabelSelector();
+        }
         this.labelSelector.addMatchLabel(key, value);
     }
 
@@ -41,7 +43,7 @@ export default class PersistentVolumeClaimSpec implements IPersistentVolumeClaim
         return {
             "accessModes": this.accessModes,
             "resources": this.resourceRequirements.toJson(),
-            "selector": this.labelSelector.toJson(),
+            "selector": (this.labelSelector) ? this.labelSelector.toJson() : undefined,
             "storageClassName": this.storageClassName,
             "volumeName": this.volumeName
         };

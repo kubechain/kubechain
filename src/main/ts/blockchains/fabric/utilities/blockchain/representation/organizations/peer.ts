@@ -5,7 +5,6 @@ import * as Path from 'path';
 import Peer from "./entities/peer";
 import IOrganization from "./iorganization";
 import OrganizationRepresentation from "./representation";
-import CertificateAuthorityDeployment from "../../../../adapters/minikube/organizations/peer/ca/deployment";
 
 export default class PeerOrganization implements IOrganization {
     private organization: Organization;

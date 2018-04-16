@@ -1,23 +1,18 @@
 import * as  fs from 'fs-extra';
 import * as  Path from 'path';
 import Kubechain from "../../../../../kubechain";
-import ICommandExecutor from "../../../../utilities/icommandexecutor";
 import Options from '../../../options';
 import OrdererOrganization from "./organizations/orderer";
 import PeerOrganization from "./organizations/peer";
-import IOrganization from "./organizations/iorganization";
 import OrganizationRepresentation from "./organizations/representation";
+import KubechainTargets from "../../../../../targets";
 
 
-export default class RepresentationCreator implements ICommandExecutor {
+export default class RepresentationCreator {
     private options: Options;
 
-    constructor() {
-        this.options = new Options(new Kubechain());
-    }
-
-    validCommandForChain(chain: string): boolean {
-        return undefined;
+    constructor(targets: KubechainTargets) {
+        this.options = new Options(new Kubechain(targets));
     }
 
     createOrdererRepresentations(): OrganizationRepresentation[] {

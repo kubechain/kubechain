@@ -1,4 +1,3 @@
-import Organization from "../../../../../utilities/blockchain/representation/organizations/organization";
 import PeerDeployment from "./deployment";
 import PeerService from "./service";
 import Options from "../../../../../options";

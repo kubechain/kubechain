@@ -1,0 +1,51 @@
+{
+  "apiVersion": "apps/v1beta1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "maya-apiserver",
+    "namespace": "default"
+  },
+  "spec": {
+    "replicas": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "name": "maya-apiserver"
+        }
+      },
+      "spec": {
+        "serviceAccountName": "openebs-maya-operator",
+        "containers": [
+          {
+            "name": "maya-apiserver",
+            "imagePullPolicy": "Always",
+            "image": "openebs/m-apiserver:0.5.3",
+            "ports": [
+              {
+                "containerPort": 5656
+              }
+            ],
+            "env": [
+              {
+                "name": "OPENEBS_IO_JIVA_CONTROLLER_IMAGE",
+                "value": "openebs/jiva:0.5.3"
+              },
+              {
+                "name": "OPENEBS_IO_JIVA_REPLICA_IMAGE",
+                "value": "openebs/jiva:0.5.3"
+              },
+              {
+                "name": "OPENEBS_IO_VOLUME_MONITOR_IMAGE",
+                "value": "openebs/m-exporter:0.5.3"
+              },
+              {
+                "name": "OPENEBS_IO_JIVA_REPLICA_COUNT",
+                "value": "3"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -65,12 +65,6 @@ export default class PeerOrganization implements IOrganization {
         return this.organization.mspID();
     }
 
-    directoriesToConfigMaps(): ConfigMap[] {
-        //TODO:
-        // return this.configDirectoryTreeToConfigMaps;
-        return [];
-    }
-
     createKubernetesResources() {
         console.info("[PEER-ORGANISATION]:", this.name());
         this.createOrganisationDirectories();

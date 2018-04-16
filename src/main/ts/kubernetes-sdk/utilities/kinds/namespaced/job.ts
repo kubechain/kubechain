@@ -1,7 +1,11 @@
 import IKind from "../ikind";
 
 export default class Job implements IKind {
-    static toString() {
+    toPlural(): string {
+        return "Job";
+    }
+
+    toString() {
         return "Job";
     }
 }

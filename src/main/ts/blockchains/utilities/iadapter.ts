@@ -1,7 +1,11 @@
+import KubechainTargets from "../../targets";
+
 export default interface IAdapter {
-    start(): any;
+    start(targets: KubechainTargets): any;
 
     matchesBlockchainTarget(target: string): boolean;
 
     matchesKubernetesTarget(target: string): boolean;
+
+    matchesTargets(targets: KubechainTargets): boolean;
 }

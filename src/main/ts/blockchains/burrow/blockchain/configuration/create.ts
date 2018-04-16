@@ -6,24 +6,21 @@ import PeerNode from "../../utilities/nodes/peer";
 import Options from "../../options";
 import Kubechain from "../../../../kubechain";
 import ICommandExecutor from "../../../utilities/icommandexecutor";
+import KubechainTargets from "../../../../targets";
 
 
 // NOTE: Currently this class does not "create" the configuration.
 // It copies and adjusts existing configuration located at: `./configuration/burrow/`
 export default class ChainConfigurationCreator implements ICommandExecutor {
-
     private options: Options;
-
-    constructor() {
-        this.options = new Options(new Kubechain());
-    }
 
     //TODO: Duplication, remove.
     validCommandForChain(chain: string): boolean {
         return chain === 'burrow';
     }
 
-    create() {
+    create(targets: KubechainTargets) {
+        this.options = new Options(new Kubechain(targets));
         console.info("[BURROW CONFIGURATION]");
         this.copyConfigurationToIntermediateDirectory();
         this.changeConfigurations();

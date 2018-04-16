@@ -1,7 +1,11 @@
 import IKind from "../ikind";
 
 export default class PersistentVolumeClaim implements IKind {
-    static toString() {
+    toPlural(): string {
+        return "PersistentVolumeClaim";
+    }
+
+    toString() {
         return "PersistentVolumeClaim";
     }
 }
