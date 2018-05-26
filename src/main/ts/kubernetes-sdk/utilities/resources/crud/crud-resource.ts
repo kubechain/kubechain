@@ -67,7 +67,7 @@ export default class CrudResource {
         return this.baseApiMethod(client)(this.resource.metadata.name).delete();
     }
 
-    get(client: any): any {
-        return this.baseApiMethod(client)(this.resource.metadata.name).get();
+    get(client: any, options: any): any {
+        return this.baseApiMethod(client)(this.resource.metadata.name).get(options);
     }
 }

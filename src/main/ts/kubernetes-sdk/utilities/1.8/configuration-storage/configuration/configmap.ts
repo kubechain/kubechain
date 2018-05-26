@@ -7,6 +7,8 @@ import KeyToPath from '../../../../api/1.8/configuration-storage/storage/volumes
 import * as Naming from '../../../naming';
 import ConfigMapTuples from "../../../../../blockchains/fabric/utilities/kubernetes/configmaptuples";
 import ConfigMapTuple from "../../../../../blockchains/fabric/utilities/kubernetes/configmaptuple";
+import IConfigurationResource from "../../../../api/1.8/configuration-storage/configuration/iconfigurationresource";
+import OpaqueSecret from "../../../../api/1.8/configuration-storage/configuration/secret/opaquesecret";
 
 function directoryTreeToConfigMaps(rootPath: string, namespace: string): any {
     const configMaps: any = {};
@@ -22,6 +24,7 @@ function directoryTreeToConfigMaps(rootPath: string, namespace: string): any {
 }
 
 //TODO: Handle directories with no files in them.
+
 function directoryToConfigMap(path: string, name: string, namespace: string): ConfigMap {
     let configMap = new ConfigMap(name, namespace);
     const files = Util.findFilesInDirectory(path);
@@ -38,7 +41,7 @@ function directoryToConfigMap(path: string, name: string, namespace: string): Co
     return configMap;
 }
 
-function fileToDataPair(configMap: ConfigMap, path: string) {
+function fileToDataPair(configMap: IConfigurationResource, path: string) {
     const fileName = Path.basename(path);
     const key = Naming.fileNameToPosixFileName(fileName);
     configMap.addDataPair(key, fs.readFileSync(path).toString());

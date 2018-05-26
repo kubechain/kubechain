@@ -1,6 +1,6 @@
 import FabricChainConfigurationCreator from "../../../blockchains/fabric/blockchain/configuration/create";
 import BurrowChainConfigurationCreator from "../../../blockchains/burrow/blockchain/configuration/create";
-import {argumentsToKubechainTargets} from "../../cli";
+import {createKubechainConfiguration} from "../../cli";
 
 const creators = [FabricChainConfigurationCreator, BurrowChainConfigurationCreator];
 
@@ -9,13 +9,14 @@ const desc = 'Create blockchain configuration for <chain>';
 const builder = {};
 
 function handler(argv: any) {
-    const targets = argumentsToKubechainTargets(argv);
+    const kubechain = createKubechainConfiguration(argv);
+    const targets = kubechain.get('$.targets');
     creators.forEach(async (Creator) => {
         const creator = new Creator();
-        if (creator.validCommandForChain(targets.blockchain.name)) {
-            console.log('Creating chain configuration for %s', targets.blockchain.name);
+        if (creator.validCommandForChain(targets.blockchain)) {
+            console.log('Creating chain configuration for %s', targets.blockchain);
             try {
-                await creator.create(targets);
+                await creator.create(kubechain);
             }
             catch (e) {
                 console.error(e);

@@ -6,47 +6,51 @@ import ServicePort from "../../../../kubernetes-sdk/api/1.8/discovery-load-balan
 import AccountRepresentation from "../../utilities/accounts/representation";
 import * as fs from "fs-extra";
 import Namespace from "../../../../kubernetes-sdk/api/1.8/cluster/namespace";
-import AccountPod from "./accountpod";
+import AccountWorkload from "./accountworkload";
 import IResource from "../../../../kubernetes-sdk/api/1.8/iresource";
 import ClusterIPNoneService from "../../../../kubernetes-sdk/api/1.8/discovery-load-balancing/services/clusterip/clusteripnone";
 import Options from "../../options";
-import Kubechain from "../../../../kubechain";
-import KubechainTargets from "../../../../targets";
+import Kubechain from "../../../../kubechain/kubechain";
+import KubechainTargets from "../../../../kubechain/targets";
+import IHooks from "../../../utilities/iadapterhooks";
 
 export default class Adapter implements IAdapter {
     private options: Options;
+    private hooks: IHooks;
+    private workloads: Array<{ path: string, workload: AccountWorkload }>;
+    private resources: Array<{ fileName: string, resource: IResource }>;
 
-    constructor() {
-        this.options = new Options(
-            new Kubechain({
-                blockchain: {name: "burrow"},
-                kubernetes: {name: "gce"}
-            }));
-    }
-
-    matchesBlockchainTarget(target: string) {
-        return target && target.toLowerCase() === 'burrow';
-    }
-
-    matchesKubernetesTarget(target: string): boolean {
-        return target && target.toLowerCase() === 'gce';
+    constructor(kubechain: Kubechain) {
+        this.options = new Options(kubechain);
+        this.hooks = this.options.get('$.hooks');
+        this.workloads = [];
+        this.resources = [];
     }
 
     matchesTargets(targets: KubechainTargets): boolean {
-        return this.matchesBlockchainTarget(targets.blockchain.name) && this.matchesKubernetesTarget(targets.kubernetes.name);
+        return targets.matchesBlockchainTarget('burrow') && targets.matchesKubernetesTarget('gce');
     }
 
     start(): any {
-        console.info('[KUBERNETES]');
-        this.createNamespace();
-        this.createService();
-        this.createAccountsFromRepresentations();
+        try {
+            console.info('[KUBERNETES]');
+            this.createNamespace();
+            this.createService();
+            this.createAccountsFromRepresentations();
+            this.write();
+        }
+        catch (e) {
+            console.error(e);
+        }
     }
 
     private createNamespace() {
         console.info('Creating namespace');
         const namespace = new Namespace(this.options.get('$.name'));
-        this.resourceToJsonFile(namespace, this.options.get('$.name') + '-namespace');
+        this.resources.push({
+            fileName: this.options.get('$.name') + '-namespace',
+            resource: namespace
+        })
     }
 
     private createService() {
@@ -57,7 +61,10 @@ export default class Adapter implements IAdapter {
         service.addServicePort(new ServicePort("p2p", 46656));
         service.addServicePort(new ServicePort("rpc", 46657));
         service.addServicePort(new ServicePort("api", 1337));
-        this.resourceToJsonFile(service, this.options.get('$.name') + '-service');
+        this.resources.push({
+            fileName: this.options.get('$.name') + '-service',
+            resource: service
+        })
     }
 
 
@@ -65,24 +72,49 @@ export default class Adapter implements IAdapter {
         console.info('Creating account pods');
 
         const representations = Accounts.getAccountRepresentationsFromPath(this.options.get('$.blockchain.intermediate.paths.configuration'));
-        this.createSeeds(representations);
-        this.createPeers(representations);
+        this.hooks.createdRepresentations({
+            representations: representations,
+            namespace: this.options.get('$.name'),
+            service: this.options.get('$.name')
+        });
+        this.createWorkloads(representations);
     }
 
+    private createWorkloads(representations: AccountRepresentation[]) {
+        // hooks.beforeCreateWorkloads();
+        this.createSeeds(representations);
+        this.createPeers(representations);
+        // hooks.createdWorkloads();
+    }
+
+
     private createSeeds(representations: AccountRepresentation[]) {
-        const seedsRepresentations = Nodes.getSeedRepresentations(representations);
-        seedsRepresentations.forEach(representation => {
-            const seedPod = new AccountPod(representation, this.options.get('$.name'), this.options);
-            seedPod.toJsonFile(this.options.get('$.kubernetes.paths.seeds'));
+        console.info("Creating seeds");
+        const seedRepresentations = Nodes.getSeedRepresentations(representations);
+        seedRepresentations.forEach(representation => {
+            const seedWorkload = new AccountWorkload(representation, this.options.get('$.name'), this.options);
+            this.workloads.push({path: this.options.get('$.kubernetes.paths.seeds'), workload: seedWorkload});
         })
     }
 
     private createPeers(representations: AccountRepresentation[]) {
+        console.info("Creating peers");
         const peerRepresentation = Nodes.getPeerRepresentations(representations);
         peerRepresentation.forEach(representation => {
-            const peerPod = new AccountPod(representation, this.options.get('$.name'), this.options);
-            peerPod.toJsonFile(this.options.get('$.kubernetes.paths.peers'));
+            const peerWorkload = new AccountWorkload(representation, this.options.get('$.name'), this.options);
+            this.workloads.push({path: this.options.get('$.kubernetes.paths.peers'), workload: peerWorkload});
         })
+    }
+
+    private write() {
+        this.hooks.beforeWrite({resources: this.resources, workloads: this.workloads});
+        this.resources.forEach((resource) => {
+            this.resourceToJsonFile(resource.resource, resource.fileName);
+        });
+        this.workloads.forEach((workload) => {
+            workload.workload.write(workload.path);
+        });
+        // this.hooks.written({resources: this.resources, workloads: this.workloads});
     }
 
     //TODO: Duplication, remove.

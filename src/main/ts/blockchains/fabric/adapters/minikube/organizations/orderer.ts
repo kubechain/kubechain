@@ -1,11 +1,9 @@
-import IOrganization from "./iorganization";
 import * as path from 'path';
-import Organization from './organization';
+import UtilOrdererOrganization from '../../../utilities/blockchain/organizations/orderer/organization';
 import Options from "../../../options";
 import PersistentVolumeClaim from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/persistentvolumeclaim/persistentvolumeclaim";
 import ResourceRequirements from "../../../../../kubernetes-sdk/api/1.8/meta/resourcerequirements";
 import ObjectMeta from "../../../../../kubernetes-sdk/api/1.8/meta/objectmeta";
-import OpaqueSecret from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/secret/opaquesecret";
 import Namespace from "../../../../../kubernetes-sdk/api/1.8/cluster/namespace";
 import Orderer from "./orderer/orderer";
 import OrganizationRepresentation from "../../../utilities/blockchain/representation/organizations/representation";
@@ -16,35 +14,63 @@ import IContainer from "../../../../../kubernetes-sdk/api/1.8/workloads/containe
 import IPodSpec from "../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import ConfigMapTuples from "../../../utilities/kubernetes/configmaptuples";
 import ConfigMapTuple from "../../../utilities/kubernetes/configmaptuple";
-import {createDirectories, toJsonFile} from "../../../../../util";
+import {createDirectories} from "../../../../../util";
 import {directoryTreeToConfigMapTuples} from "../../../utilities/kubernetes/configmap";
-import {directoryToOpaqueSecret} from "../../../../../kubernetes-sdk/utilities/1.8/configuration-storage/configuration/secret";
 import DirectoryOrCreateHostPathPersistentVolume from "../../../../../kubernetes-sdk/api/1.8/cluster/persistentvolumes/hostpath/directoryorcreate";
-import Container from "../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
+import ResourceWriter from "../../../utilities/blockchain/resourcewriter/resourcewriter";
+import IOrdererOrganization from "../../../utilities/blockchain/organizations/orderer/irordererorganization";
 
-export default class OrdererOrganization implements IOrganization {
+export default class OrdererOrganization implements IOrdererOrganization {
     private options: Options;
     private representation: any;
     private configPath: string;
     private outputPaths: { root: string, orderers: string, configmaps: string };
     private persistentVolumeClaim: PersistentVolumeClaim;
     private persistentVolume: DirectoryOrCreateHostPathPersistentVolume;
-    private genesisBlockSecret: OpaqueSecret;
     private _namespace: Namespace;
-    private organization: Organization;
+    private ordererOrganization: UtilOrdererOrganization;
     private volume: IVolume;
-    private configMapTuples: ConfigMapTuples;
+    private cryptographicMaterial: ConfigMapTuples;
+    private writer: ResourceWriter;
 
     constructor(options: Options, representation: OrganizationRepresentation) {
-        this.organization = new Organization(representation, options);
+        this.ordererOrganization = new UtilOrdererOrganization(options, representation);
         this.options = options;
         this.representation = representation;
         this.configPath = representation.path;
+    }
+
+    name() {
+        return this.ordererOrganization.name();
+    }
+
+    namespace() {
+        return this.ordererOrganization.namespace();
+    }
+
+    mspID() {
+        return this.ordererOrganization.mspID()
+    }
+
+    addResources(writer: ResourceWriter) {
+        this.ordererOrganization = new UtilOrdererOrganization(this.options, this.representation); //TODO; Fix this. SetVolume?
+        this.ordererOrganization.addResources(writer);
+        console.info('[ORDERER-ORGANISATION]:', this.ordererOrganization.name());
+        this.writer = writer;
+        this.configureOutput();
+        this.createPersistentVolume();
+        this.createConfiguration();
+        this.createNamespace();
+        this.createOrderers();
+    }
+
+    private configureOutput() {
         this.outputPaths = this.createOutputPaths();
+        this.createOutputDirectories();
     }
 
     private createOutputPaths() {
-        const outputPath = path.join(this.options.get('$.kubernetes.paths.ordererorganizations'), this.organization.name());
+        const outputPath = path.join(this.options.get('$.kubernetes.paths.ordererorganizations'), this.ordererOrganization.name());
         return {
             root: outputPath,
             orderers: path.join(outputPath, 'orderers'),
@@ -52,158 +78,135 @@ export default class OrdererOrganization implements IOrganization {
         };
     }
 
+    private createOutputDirectories() {
+        console.info("Creating configuration directories");
+        createDirectories([this.outputPaths.root, this.outputPaths.configmaps, this.outputPaths.orderers]);
+    }
+
     private createPersistentVolume() {
-        this.persistentVolume = new DirectoryOrCreateHostPathPersistentVolume(new ObjectMeta(this.organization.name(), undefined));
-        this.persistentVolume.setHostPath(this.organization.minikubeSharedFolder());
+        this.persistentVolume = new DirectoryOrCreateHostPathPersistentVolume(new ObjectMeta(this.ordererOrganization.name(), undefined));
+        this.persistentVolume.setHostPath(this.minikubeSharedFolder());// TODO: Move to util
         this.persistentVolume.setCapacity({
             "storage": "50Mi"
         });
         this.persistentVolume.addAccessMode("ReadWriteOnce");
-        this.persistentVolume.setStorageClassName(this.organization.name());
+        this.persistentVolume.setStorageClassName(this.ordererOrganization.name());
 
-        this.persistentVolumeClaim = new PersistentVolumeClaim(this.organization.name(), this.organization.name());
+        this.persistentVolumeClaim = new PersistentVolumeClaim(this.ordererOrganization.name(), this.ordererOrganization.name());
         this.persistentVolumeClaim.addAccessMode("ReadWriteOnce");
-        this.persistentVolumeClaim.setStorageClassName(this.organization.name());
+        this.persistentVolumeClaim.setStorageClassName(this.ordererOrganization.name());
         const requirements = new ResourceRequirements();
         requirements.setRequests({"storage": "10Mi"});
         this.persistentVolumeClaim.setResourceRequirements(requirements);
 
         this.volume = this.persistentVolumeClaim.toVolume();
 
-        toJsonFile(this.outputPaths.root, this.organization.name() + "-pv", this.persistentVolume.toJson());
-        toJsonFile(this.outputPaths.root, this.organization.name() + "-pvc", this.persistentVolumeClaim.toJson());
+        this.ordererOrganization.volume = this.volume;
+
+        this.writer.addResource({
+            path: this.outputPaths.root,
+            name: this.ordererOrganization.name() + "-pv",
+            resource: this.persistentVolume
+        });
+        this.writer.addResource({
+            path: this.outputPaths.root,
+            name: this.ordererOrganization.name() + "-pvc",
+            resource: this.persistentVolumeClaim
+        });
     }
 
-    private createGenesisBlockSecret(configPath: string) {
-        this.genesisBlockSecret = directoryToOpaqueSecret(configPath, this.organization.name() + '-genesis-block', this.namespace());
-        toJsonFile(this.outputPaths.root, this.organization.name() + '-genesis-block', this.genesisBlockSecret.toJson())
+    private minikubeSharedFolder(): string {
+        return Path.posix.join(Path.posix.sep, 'data', '.kubechain', 'fabric', this.representation.name);
     }
 
-    name() {
-        return this.organization.name();
+    private createConfiguration(): void {
+        this.createCryptographicMaterial();
     }
 
-    namespace() {
-        return this.organization.namespace();
-    }
-
-    mspID() {
-        return this.organization.mspID()
-    }
-
-    addressSegment() {
-        return this.organization.addressSegment();
-    }
-
-    createKubernetesResources() {
-        console.info('[ORDERER-ORGANISATION]:', this.organization.name());
-        this.createOutputDirectories();
-        this.createPersistentVolume();
-        this.createGenesisBlockSecret(this.configPath);
-        this.createConfigMapTuples();
-        this.createNamespace();
-        this.createOrderers();
-    }
-
-    private createConfigMapTuples(): void {
-        this.configMapTuples = directoryTreeToConfigMapTuples(this.representation.path, this.namespace());
-        const tuples = this.configMapTuples.findForAbsolutePath(this.representation.path);
+    private createCryptographicMaterial(): void {
+        this.cryptographicMaterial = directoryTreeToConfigMapTuples(this.representation.path, this.namespace());
+        const tuples = this.cryptographicMaterial.findForAbsolutePath(this.representation.path);
         tuples.forEach((tuple: ConfigMapTuple) => {
-            const json = tuple.getConfigMap().toJson();
+            const configMap = tuple.getConfigMap();
+            const json = configMap.toJson();
             const name = json.metadata.name; //TODO: Change this. Ok for now.
-            toJsonFile(this.outputPaths.configmaps, name, json);
+            this.writer.addResource({
+                path: this.outputPaths.configmaps,
+                name: name,
+                resource: configMap
+            });
         })
     }
 
-    private createNamespace() {
-        this._namespace = new Namespace(this.organization.name());
-        toJsonFile(this.outputPaths.root, this.organization.name() + '-namespace', this._namespace.toJson());
-    }
-
-    private createOutputDirectories() {
-        console.info("Creating configuration directories");
-        createDirectories([this.outputPaths.root, this.outputPaths.configmaps, this.outputPaths.orderers]);
-    }
-
-    private createOrderers() {
-        console.info("Creating orderers");
-        this.representation.entities.forEach((representation: OrganizationEntityRepresentation) => {
-            const orderer = new Orderer(representation, this, this.options);
-            orderer.toKubernetesResource(this.outputPaths.orderers);
+    private createNamespace(): void {
+        this._namespace = new Namespace(this.ordererOrganization.name());
+        this.writer.addResource({
+            path: this.outputPaths.root,
+            name: this.ordererOrganization.name() + '-namespace',
+            resource: this._namespace
         });
     }
 
-    static equalsType(type: string) {
+    private createOrderers(): void {
+        console.info("Creating orderers");
+        this.representation.entities.forEach((representation: OrganizationEntityRepresentation) => {
+            const orderer = new Orderer(representation, this, this.options, this.cryptographicMaterial);
+            orderer.addResources(this.writer, this.outputPaths.orderers);
+        });
+    }
+
+    static equalsType(type: string): boolean {
         return type === 'orderer';
     }
 
-    addOrdererConfigurationToContainer(ordererName: string, container: IContainer, baseMountPath: string) {
-        const relativePath = Path.join('orderers', ordererName);
-        const tuples = this.configMapTuples.findSubPathTuplesForRelativePath(relativePath);
-
-        tuples.forEach((tuple: ConfigMapTuple) => {
-            tuple.addConfigMapAsRelativeVolumeMount(container, baseMountPath);
-        });
-    }
-
-    addOrdererConfigurationAsVolume(ordererName: string, spec: IPodSpec) {
-        const relativePath = Path.join('orderers', ordererName);
-        const tuples = this.configMapTuples.findSubPathTuplesForRelativePath(relativePath);
-
-        tuples.forEach((tuple: ConfigMapTuple) => {
-            tuple.addConfigMapAsVolume(spec)
-        });
-    }
-
-    addOrdererConfigurationToOrganizationVolume(ordererName: string, container: IContainer, mountPath: string) {
-        const peerSubPath = Path.posix.join('orderers', ordererName);
+    mountOrdererCryptographicMaterialFromVolume(ordererName: string, container: IContainer, mountPath: string) {
+        const peerSubPath = this.ordererPathInContainer(ordererName);
         const mount = this.volume.toVolumeMount(Path.posix.join(mountPath, peerSubPath));
         mount.setSubPath(peerSubPath);
         container.addVolumeMount(mount);
     }
 
+    private ordererPathInContainer(ordererName: string): string {
+        return Path.posix.join('orderers', ordererName);
+    }
+
     addGenesisBlockAsVolume(spec: IPodSpec) {
-        const genesisBlockVolume = this.genesisBlockSecret.toVolume();
-        spec.addVolume(genesisBlockVolume);
+        this.ordererOrganization.addGenesisBlockAsVolume(spec)
     }
 
-    addGenesisBlockVolumeToContainer(container: IContainer, mountPath: string) {
-        container.addVolumeMount(this.genesisBlockSecret.toVolume().toVolumeMount(Path.posix.join(mountPath, 'genesis')));
+    mountGenesisBlock(container: IContainer, mountPath: string): void {
+        this.ordererOrganization.mountGenesisBlock(container, mountPath);
     }
 
-    addGenesisBlockToContainer(container: IContainer, mountPath: string) {
-        const genesisBlockVolumeMount = this.volume.toVolumeMount(mountPath);
-        genesisBlockVolumeMount.setSubPath(Path.posix.join('genesis', 'genesis.block'));
-        container.addVolumeMount(genesisBlockVolumeMount);
+    mountGenesisBlockDirectoryFromVolume(container: IContainer, mountPath: string) {
+        this.ordererOrganization.mountGenesisBlockDirectoryFromVolume(container, mountPath);
     }
 
-    addGenesisBlockToOrganizationVolume(container: IContainer, mountPath: string) {
-        const genesisBlockVolumeMount = this.volume.toVolumeMount(mountPath);
-        genesisBlockVolumeMount.setSubPath(Path.posix.join('genesis'));
-        container.addVolumeMount(genesisBlockVolumeMount);
-    }
-
-    addOrdererMspToContainer(ordererName: string, container: IContainer, mountPath: string) {
-        const mspVolumeMount = this.volume.toVolumeMount(mountPath);
-        mspVolumeMount.setSubPath(this.mspPath(ordererName));
-        container.addVolumeMount(mspVolumeMount);
-    }
-
-    private mspPath(ordererName: string): string {
-        return Path.posix.join('orderers', ordererName, 'msp');
-    }
-
-    addOrdererTlsToContainer(ordererName: string, container: IContainer, tlsMountPath: string) {
-        const tlsVolumeMount = this.volume.toVolumeMount(tlsMountPath);
-        tlsVolumeMount.setSubPath(this.tlsPath(ordererName));
-        container.addVolumeMount(tlsVolumeMount);
-    }
-
-    private tlsPath(ordererName: string): string {
-        return Path.posix.join('orderers', ordererName, 'tls');
+    mountGenesisBlockFileFromVolume(container: IContainer, mountPath: string) {
+        this.ordererOrganization.mountGenesisBlockFileFromVolume(container, mountPath);
     }
 
     addOrganizationVolumeToPodSpec(spec: IPodSpec) {
-        spec.addVolume(this.volume);
+        this.ordererOrganization.addOrganizationVolumeToPodSpec(spec);
+    }
+
+    mountOrdererMspFromVolume(ordererName: string, container: IContainer, mountPath: string) {
+        const mspVolumeMount = this.volume.toVolumeMount(mountPath);
+        mspVolumeMount.setSubPath(this.mspPathInContainer(ordererName));
+        container.addVolumeMount(mspVolumeMount);
+    }
+
+    private mspPathInContainer(ordererName: string): string {
+        return Path.posix.join('orderers', ordererName, 'msp');
+    }
+
+    mountOrdererTlsFromVolume(ordererName: string, container: IContainer, tlsMountPath: string) {
+        const tlsVolumeMount = this.volume.toVolumeMount(tlsMountPath);
+        tlsVolumeMount.setSubPath(this.tlsPathInContainer(ordererName));
+        container.addVolumeMount(tlsVolumeMount);
+    }
+
+    private tlsPathInContainer(ordererName: string): string {
+        return Path.posix.join('orderers', ordererName, 'tls');
     }
 }

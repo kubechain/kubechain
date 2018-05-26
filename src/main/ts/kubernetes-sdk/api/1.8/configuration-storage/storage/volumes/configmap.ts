@@ -1,10 +1,10 @@
 import IVolume from "./ivolume";
 import Volume from "./volume";
-import IConfigMapVolumeSource from "./volumesources/configmap/iconfigmapvolumesource";
 import KeyToPath from "./volumesources/keytopath";
 import VolumeMount from "../../../workloads/container/volumemount";
+import IConfigurationVolumeSource from "./volumesources/configuration/iconfigurationvolumesource";
 
-export default class ConfigMapVolume implements IVolume, IConfigMapVolumeSource {
+export default class ConfigMapVolume implements IVolume, IConfigurationVolumeSource {
     private name: string;
     private volume: Volume;
     private defaultMode: string;

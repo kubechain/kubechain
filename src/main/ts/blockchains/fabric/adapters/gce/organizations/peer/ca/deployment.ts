@@ -6,8 +6,10 @@ import EnvVar from "../../../../../../../kubernetes-sdk/api/1.8/workloads/contai
 import ContainerPort from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
 import CertificateAuthorityRepresentation from "../../../../../utilities/blockchain/representation/certificateauthorities/ca/representation";
 import CertificateAuthority from "./ca";
+import IResource from "../../../../../../../kubernetes-sdk/api/1.8/iresource";
 
-export default class CertificateAuthorityDeployment {
+//TODO: Fix duplicate class
+export default class CertificateAuthorityDeployment implements IResource {
     private certificateAuthority: CertificateAuthority;
     private representation: CertificateAuthorityRepresentation;
     private options: Options;
@@ -38,11 +40,11 @@ export default class CertificateAuthorityDeployment {
         const funnelContainer = new Container("funnel", "kubechain/funnel:1.1.0");
 
         const funnelFromMountPath = Path.posix.join(funnelBasePath, 'from');
-        this.certificateAuthority.addConfigurationToContainer(funnelContainer, funnelFromMountPath);
+        this.certificateAuthority.mountCryptographicMaterial(funnelContainer, funnelFromMountPath);
 
         const funnelToMountPath = Path.posix.join(funnelBasePath, 'to');
-        this.certificateAuthority.addConfigurationFromVolume(funnelContainer, funnelToMountPath);
-        this.certificateAuthority.addConfigurationAsVolumes(this.deployment);
+        this.certificateAuthority.mountCryptographicMaterialFromVolume(funnelContainer, funnelToMountPath);
+        this.certificateAuthority.addCryptographicMaterialAsVolumes(this.deployment);
         this.deployment.addInitContainer(funnelContainer);
     }
 
@@ -60,16 +62,12 @@ export default class CertificateAuthorityDeployment {
         hyperledgerCaContainer.addArgument("-c");
         hyperledgerCaContainer.addArgument(` fabric-ca-server start --ca.certfile ${caCertFile} --ca.keyfile ${caKeyFile} -b admin:adminpw -d `);
 
-        this.certificateAuthority.addConfigurationFromVolume(hyperledgerCaContainer, CertificateAuthorityDeployment.hyperledgerMountPath());
+        this.certificateAuthority.mountCryptographicMaterialFromVolume(hyperledgerCaContainer, CertificateAuthorityDeployment.hyperledgerMountPath());
         this.deployment.addContainer(hyperledgerCaContainer);
     }
 
     static hyperledgerMountPath() {
         return Path.posix.join(Path.posix.sep, 'etc', 'hyperledger', 'fabric-ca-server-config');
-    }
-
-    static caPath() {
-        return Path.posix.join('ca', Path.posix.sep);
     }
 
     toJson(): any {

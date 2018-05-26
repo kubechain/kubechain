@@ -4,6 +4,8 @@ import ContainerPort from "./port";
 import EnvVar from "./envvar";
 
 export default interface IContainer extends IResource {
+    setImagePullPolicy(policy: string): void;
+
     addPort(port: ContainerPort): void;
 
     addVolumeMount(volumeMount: VolumeMount): void;

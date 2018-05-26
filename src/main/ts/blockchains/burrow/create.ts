@@ -2,42 +2,28 @@ import IAdapter from "../utilities/iadapter";
 import MinikubeAdapter from "./adapters/minikube/adapter";
 import ChainConfigurationCreator from "./blockchain/configuration/create";
 import GceAdapter from "./adapters/gce/adapter";
-import KubechainTargets from "../../targets";
+import KubechainTargets from "../../kubechain/targets";
+import Kubechain from "../../kubechain/kubechain";
+import IHooks from "../utilities/iadapterhooks";
 
 export default class BurrowConfigurationCreator implements IAdapter {
     private adapters: IAdapter[];
+    private kubechain: Kubechain;
 
-    constructor() {
-        this.adapters = [new MinikubeAdapter(), new GceAdapter()];
-    }
-
-    start(targets: KubechainTargets) {
-        const configurationAdapter = new ChainConfigurationCreator();
-        configurationAdapter.create(targets);
-        const kubernetesAdapter = this.getAdapter(targets.kubernetes.name);
-        kubernetesAdapter.start(targets);
-    }
-
-    matchesBlockchainTarget(target: string): boolean {
-        return target === 'burrow';
-    }
-
-    matchesKubernetesTarget(target: string): boolean {
-        return this.targetMatchesOneOfAdapters(target);
+    constructor(kubechain: Kubechain) {
+        this.kubechain = kubechain;
+        this.adapters = [new MinikubeAdapter(kubechain), new GceAdapter(kubechain)];
     }
 
     matchesTargets(targets: KubechainTargets): boolean {
         return this.targetsMatchOneOfAdapters(targets);
     }
 
-    private targetMatchesOneOfAdapters(target: string) {
-        let matches = false;
-        this.adapters.forEach((adapter: IAdapter) => {
-            if (adapter.matchesKubernetesTarget(target)) {
-                matches = true;
-            }
-        });
-        return matches;
+    start(kubechain: Kubechain) {
+        const configurationAdapter = new ChainConfigurationCreator();
+        configurationAdapter.create(kubechain);
+        const kubernetesAdapter = this.getAdapter(this.kubechain.get('$.targets'));
+        kubernetesAdapter.start(kubechain);
     }
 
     private targetsMatchOneOfAdapters(target: KubechainTargets) {
@@ -50,10 +36,10 @@ export default class BurrowConfigurationCreator implements IAdapter {
         return matches;
     }
 
-    private getAdapter(target: string): IAdapter {
+    private getAdapter(targets: KubechainTargets): IAdapter {
         let targetAdapter = undefined;
         this.adapters.forEach((adapter: IAdapter) => {
-            if (adapter.matchesKubernetesTarget(target)) {
+            if (adapter.matchesTargets(targets)) {
                 targetAdapter = adapter;
             }
         });

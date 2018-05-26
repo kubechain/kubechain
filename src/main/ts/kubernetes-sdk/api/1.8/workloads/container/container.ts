@@ -26,6 +26,10 @@ export default class Container implements IContainer {
         this.args = [];
     }
 
+    setImagePullPolicy(policy: string) {
+        this.imagePullPolicy = policy;
+    }
+
     addPort(port: ContainerPort) {
         this.ports.push(port);
     }
@@ -46,7 +50,6 @@ export default class Container implements IContainer {
         this.args.push(argument);
     }
 
-    //TODO: Create actual type
     setSecurityContext(context: {}) {
         this.securityContext = context;
     }

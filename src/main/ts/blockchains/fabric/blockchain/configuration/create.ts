@@ -4,7 +4,7 @@ import * as shell from 'shelljs';
 import * as download from 'download';
 
 import ICommandExecutor from "../../../utilities/icommandexecutor";
-import Kubechain from "../../../../kubechain";
+import Kubechain from "../../../../kubechain/kubechain";
 import Options from "../../options";
 
 import * as Platforms from '../../utilities/host/platforms/platforms';
@@ -12,7 +12,8 @@ import * as Architectures from '../../utilities/host/architectures/architectures
 import {createDirectories, findShellDependencies} from "../../../../util";
 import IArchitecture from "../../utilities/host/architectures/iarchitecture";
 import {executeCommand} from "../../../utilities/shellcommand";
-import KubechainTargets from "../../../../targets";
+import ChannelCreator from "../../utilities/blockchain/channel/creator";
+import ChannelOptions from "../../utilities/blockchain/channel/options";
 
 export default class ChainConfigurationCreator implements ICommandExecutor {
     private kubechain: Kubechain;
@@ -22,15 +23,16 @@ export default class ChainConfigurationCreator implements ICommandExecutor {
         return chain === 'fabric';
     }
 
-    async create(targets: KubechainTargets) {
-        this.kubechain = new Kubechain(targets);
+    async create(kubechain: Kubechain) {
+        this.kubechain = kubechain;
         this.options = new Options(this.kubechain);
         return new Promise(async (resolve, reject) => {
             try {
                 console.info('[FABRIC CONFIGURATION]');
                 this.createDirectories();
                 await this.verifyFabricBinaries();
-                await this.createChainConfiguration();
+                await this.createCryptogpraphicMaterial();
+                await this.createChannelTransactions();
                 resolve();
             } catch (e) {
                 console.error('Error: Unable to create Fabric configuration.');
@@ -132,7 +134,7 @@ export default class ChainConfigurationCreator implements ICommandExecutor {
         });
     }
 
-    private createChainConfiguration() {
+    private createCryptogpraphicMaterial() {
         return new Promise(async (resolve, reject) => {
             try {
                 console.info("Generating cryptographic artifacts");
@@ -153,6 +155,7 @@ export default class ChainConfigurationCreator implements ICommandExecutor {
     private copyConfigurationFilesToBlockchainRoot() {
         shell.cp(this.options.get('$.configuration.paths.configtx'), this.options.get('$.blockchain.paths.root'));
         shell.cp(this.options.get('$.configuration.paths.cryptoconfig'), this.options.get('$.blockchain.paths.root'));
+        fs.copySync(this.options.get('$.configuration.paths.chaincodes'), this.options.get('$.blockchain.paths.chaincodes'));
     }
 
     private setMandatoryEnvironmentVariablesForFabricConfiguration() {
@@ -208,5 +211,14 @@ export default class ChainConfigurationCreator implements ICommandExecutor {
                 shell.cp(path.join(this.options.get('$.blockchain.paths.root'), 'genesis.block'), path.join(organizationsPath, "ordererOrganizations", orgPath, 'genesis.block'));
             }
         );
+    }
+
+    private createChannelTransactions() {
+        const channels = this.options.get('$.options.channels') || [];
+        const promises = channels.map((options: ChannelOptions) => {
+            const creator = new ChannelCreator(options, this.options);
+            return creator.create()
+        });
+        return Promise.all(promises);
     }
 }

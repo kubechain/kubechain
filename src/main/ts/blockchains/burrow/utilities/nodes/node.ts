@@ -22,7 +22,6 @@ export default class Node {
             const configTomlFileContents = fs.readFileSync(configTomlPath);
             const configTomlObject = toml.parse(configTomlFileContents.toString());
             configTomlObject.tendermint.configuration.moniker = Naming.toDNS1123(this.accountRepresentation.name);
-            configTomlObject.tendermint.configuration.db_backend = "leveldb";
             fs.outputFileSync(configTomlPath, tomlify.toToml(configTomlObject));
         }
         catch (e) {

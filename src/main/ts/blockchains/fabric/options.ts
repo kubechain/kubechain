@@ -1,16 +1,27 @@
 import * as jsonpath from 'jsonpath';
 import * as Path from 'path';
 
-import Kubechain from "../../kubechain";
+import Kubechain from "../../kubechain/kubechain";
+import IHooks from "../utilities/iadapterhooks";
+import KubechainTargets from "../../kubechain/targets";
+import IChannel from "./utilities/blockchain/channel/options";
+import IChainCode from "./utilities/blockchain/chaincode/options";
+import IWorkloadHooks from "../utilities/iworkloadhooks";
 
 interface FabricOptions {
     name: string
     version: string
+    hooks: IHooks
+    options: {
+        channels: IChannel[]
+        chaincodes: IChainCode[]
+    }
     configuration: {
         paths: {
             root: string
             configtx: string
             cryptoconfig: string
+            chaincodes: string
         }
     },
     blockchain: {
@@ -18,6 +29,7 @@ interface FabricOptions {
             root: string
             bin: string
             channels: string
+            chaincodes: string
         },
         organizations: {
             paths: {
@@ -25,13 +37,14 @@ interface FabricOptions {
                 peerorganizations: string
                 ordererorganizations: string
             }
-        },
+        }
     },
     kubernetes: {
         paths: {
             root: string
             peerorganizations: string
             ordererorganizations: string
+            chaincodes: string
         }
     }
 }
@@ -42,27 +55,58 @@ export default class Options {
     private options: FabricOptions;
 
     constructor(kubechain: Kubechain) {
-        this.kubechain = kubechain || new Kubechain({blockchain: {name: 'fabric'}, kubernetes: {name: 'minikube'}});
+        this.kubechain = kubechain || new Kubechain(new KubechainTargets({
+            blockchain: 'fabric',
+            kubernetes: 'minikube'
+        }));
         this.options = this.defaults();
     }
 
-    private name(): string {
-        return `${this.kubechain.get('$.targets.blockchain.name')}-${this.kubechain.get('$.targets.kubernetes.name')}`;
-    }
-
     private defaults(): FabricOptions {
-        const configurationRoot = Path.join(this.kubechain.get('$.paths.configuration'), this.kubechain.get('$.targets.blockchain.name'));
-        const blockchainRoot = Path.join(this.kubechain.get('$.paths.blockchains'), this.kubechain.get('$.targets.blockchain.name'));
+        const configurationRoot = Path.join(this.kubechain.get('$.paths.configuration'), this.kubechain.get('$.targets.blockchain'));
+        const blockchainRoot = Path.join(this.kubechain.get('$.paths.blockchains'), this.kubechain.get('$.targets.blockchain'));
         const organizationsRoot = Path.join(blockchainRoot, 'crypto-config');
-        const kubernetesRoot = Path.join(this.kubechain.get('$.paths.kubernetes'), this.name());
+        const kubernetesRoot = Path.join(this.kubechain.get('$.paths.kubernetes'), this.kubechain.get('$.name'));
         return {
-            name: this.name(),
-            version: '1.0.4',
+            name: this.kubechain.get('$.name'),
+            version: '1.0.0',
+            hooks: this.kubechain.get('$.adapter.hooks') || {
+                loadedConfiguration(data: any): void {
+                },
+
+                createdRepresentations(data: any): void {
+                },
+
+                createdWorkloads(data: any): void {
+                },
+
+                beforeWrite(data: any): void {
+                },
+
+                written(data: any): void {
+                },
+
+                workload: {
+                    created(data: any): void {
+                    },
+
+                    createdConfiguration(data: any): void {
+                    },
+
+                    beforeCreate(data: any): void {
+                    },
+
+                    beforeWrite(data: any): void {
+                    }
+                }
+            },
+            options: this.kubechain.get('$.adapter.options'),
             configuration: {
                 paths: {
                     root: configurationRoot,
                     configtx: Path.join(configurationRoot, 'configtx.yaml'),
-                    cryptoconfig: Path.join(configurationRoot, 'crypto-config.yaml')
+                    cryptoconfig: Path.join(configurationRoot, 'crypto-config.yaml'),
+                    chaincodes: Path.join(configurationRoot, 'chaincodes')
                 }
             },
             blockchain: {
@@ -70,6 +114,7 @@ export default class Options {
                     root: blockchainRoot,
                     bin: Path.join(blockchainRoot, 'bin'),
                     channels: Path.join(blockchainRoot, 'channels'),
+                    chaincodes: Path.join(blockchainRoot, 'chaincodes')
                 },
                 organizations: {
                     paths: {
@@ -77,13 +122,14 @@ export default class Options {
                         peerorganizations: Path.join(organizationsRoot, 'peerOrganizations'),
                         ordererorganizations: Path.join(organizationsRoot, 'ordererOrganizations')
                     }
-                },
+                }
             },
             kubernetes: {
                 paths: {
                     root: kubernetesRoot,
                     peerorganizations: Path.join(kubernetesRoot, 'peerOrganizations'),
-                    ordererorganizations: Path.join(kubernetesRoot, 'ordererOrganizations')
+                    ordererorganizations: Path.join(kubernetesRoot, 'ordererOrganizations'),
+                    chaincodes: Path.join(kubernetesRoot, 'chaincodes')
                 }
             }
         }

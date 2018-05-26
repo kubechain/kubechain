@@ -30,12 +30,30 @@ export default class ConfigMapTuple {
     }
 
     absolutePathMatches(absolutePath: string): boolean {
-        const relativePathSplit = this.absolutePath.split(absolutePath + Path.sep); //TODO: Fix this Path.sep.
-        if (relativePathSplit && relativePathSplit.length > 1) {
-            const relativePath = relativePathSplit[1];
-            return relativePath === this.relativePath;
+        if (this.matchesAbsolutePathExactly(absolutePath)) {
+            return true
         }
-        return false;
+        else {
+            const relativePathSplit = this.absolutePath.split(absolutePath + Path.sep);
+            if (relativePathSplit && relativePathSplit.length > 1) {
+                const relativePath = relativePathSplit[1];
+                return relativePath === this.relativePath;
+            }
+            else {
+                return false
+            }
+        }
+        // const relativePathSplit = this.absolutePath.split(absolutePath + Path.sep); //TODO: Fix this Path.sep.
+        // console.warn(absolutePath, this.absolutePath, relativePathSplit);
+        // if (relativePathSplit && relativePathSplit.length > 1) {
+        //     const relativePath = relativePathSplit[1];
+        //     return relativePath === this.relativePath;
+        // }
+        // return false;
+    }
+
+    private matchesAbsolutePathExactly(path: string) {
+        return path === this.absolutePath;
     }
 
     addConfigMapAsRelativeVolumeMount(container: IContainer, baseMountPath: string) {
@@ -47,7 +65,7 @@ export default class ConfigMapTuple {
         container.addVolumeMount(this.configMap.toVolume().toVolumeMount(mountPath));
     }
 
-    addConfigMapAsVolume(spec: IPodSpec) {
+    addAsVolume(spec: IPodSpec) {
         spec.addVolume(this.configMap.toVolume());
     }
 

@@ -1,18 +1,16 @@
 import * as  fs from 'fs-extra';
 import * as  Path from 'path';
-import Kubechain from "../../../../../kubechain";
+import Kubechain from "../../../../../kubechain/kubechain";
 import Options from '../../../options';
 import OrdererOrganization from "./organizations/orderer";
 import PeerOrganization from "./organizations/peer";
 import OrganizationRepresentation from "./organizations/representation";
-import KubechainTargets from "../../../../../targets";
-
 
 export default class RepresentationCreator {
     private options: Options;
 
-    constructor(targets: KubechainTargets) {
-        this.options = new Options(new Kubechain(targets));
+    constructor(kubechain: Kubechain) {
+        this.options = new Options(kubechain);
     }
 
     createOrdererRepresentations(): OrganizationRepresentation[] {

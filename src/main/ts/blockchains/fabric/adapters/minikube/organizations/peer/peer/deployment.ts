@@ -5,27 +5,25 @@ import Container from "../../../../../../../kubernetes-sdk/api/1.8/workloads/con
 import Options from "../../../../../options";
 import ContainerPort from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
 import EnvVar from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
-import OrganizationEntityRepresentation from "../../../../../utilities/blockchain/representation/organizations/entities/representation";
-import PeerOrganization from "../../peer";
 import DirectoryOrCreateHostPathVolume from "../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/hostpath/directoryorcreate";
+import IResource from "../../../../../../../kubernetes-sdk/api/1.8/iresource";
 
-export default class PeerDeployment {
-    private organization: PeerOrganization;
+//TODO: Fix duplicate class.
+export default class PeerDeployment implements IResource {
     private peer: Peer;
     private namespace: string;
     private deploymentName: string;
-    private representation: OrganizationEntityRepresentation;
     private runHostPathVolume: DirectoryOrCreateHostPathVolume;
     private deployment: Deployment;
     private options: Options;
+    private dns: string[];
+    private dnsSearch: string[];
 
-    constructor(organization: PeerOrganization, peer: Peer, representation: OrganizationEntityRepresentation, options: Options) {
-        this.organization = organization;
+    constructor(peer: Peer, options: Options) {
         this.peer = peer;
-        this.namespace = organization.namespace();
+        this.namespace = peer.namespace();
         this.options = options;
-        this.deploymentName = this.peer.id() + "-" + this.organization.name();
-        this.representation = representation;
+        this.deploymentName = this.peer.id() + "-" + this.peer.organizationName();
 
         this.createDeployment();
         this.createFunnelContainer();
@@ -37,24 +35,24 @@ export default class PeerDeployment {
         this.deployment.addMatchLabel("app", "hyperledger");
         this.deployment.addMatchLabel("role", "peer");
         this.deployment.addMatchLabel("peer-id", this.peer.id());
-        this.deployment.addMatchLabel("org", this.organization.name());
+        this.deployment.addMatchLabel("org", this.peer.organizationName());
 
         this.runHostPathVolume = new DirectoryOrCreateHostPathVolume('run');
         this.runHostPathVolume.setHostPath(Path.posix.join(Path.posix.sep, 'var', 'run'));
         this.deployment.addVolume(this.runHostPathVolume);
-        this.organization.addOrganizationVolumeToPodSpec(this.deployment);
+        this.peer.addVolume(this.deployment);
+        this.peer.addCryptographicMaterialAsVolumes(this.deployment);
+        this.peer.addChainCodeAsVolumes(this.deployment);
     }
 
     private createFunnelContainer() {
         const funnelContainer = new Container("funnel", "kubechain/funnel:1.1.0");
 
         const funnelFromMountPath = Path.posix.join(PeerDeployment.funnelBaseMountPath(), 'from');
-        this.organization.addPeerConfigurationToContainer(this.peer.name(), funnelContainer, funnelFromMountPath);
+        this.peer.mountCryptographicMaterial(funnelContainer, funnelFromMountPath);
 
         const funnelToMountPath = Path.posix.join(PeerDeployment.funnelBaseMountPath(), 'to');
-        this.organization.addPeerConfigurationToOrganizationVolume(this.peer.name(), funnelContainer, funnelToMountPath);
-        this.organization.addPeerConfigurationAsVolumes(this.peer.name(), this.deployment);
-
+        this.peer.mountCryptographicMaterialFromVolume(funnelContainer, funnelToMountPath);
         this.deployment.addInitContainer(funnelContainer);
     }
 
@@ -70,6 +68,8 @@ export default class PeerDeployment {
     }
 
     private createPeerContainer() {
+        this.createDnsSettings();
+        const workingDirectory = Path.posix.join(Path.posix.sep, "opt", "gopath", "src", "github.com", "hyperledger", "fabric", "peer");
         const hyperledgerPeerContainer = new Container(this.deploymentName, `hyperledger/fabric-peer:x86_64-${this.options.get("$.version")}`);
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_LEDGER_STATE_STATEDATABASE", "CouchDB"));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS", "localhost:5984"));
@@ -85,8 +85,12 @@ export default class PeerDeployment {
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_ID", this.peer.coreId()));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_ADDRESS", this.peer.address()));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_GOSSIP_EXTERNALENDPOINT", this.peer.gossipAddress()));
-        hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_LOCALMSPID", this.organization.mspID()));
-        hyperledgerPeerContainer.setWorkingDirectory("/opt/gopath/src/github.com/hyperledger/fabric/peer");
+        hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_LOCALMSPID", this.peer.mspID()));
+        hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_VM_DOCKER_HOSTCONFIG_DNS", this.dns.join(" ")));
+        hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_VM_DOCKER_HOSTCONFIG_DNSSEARCH", this.dnsSearch.join(" ")));
+        hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_CHAINCODE_LOGGING_LEVEL", "debug"));
+
+        hyperledgerPeerContainer.setWorkingDirectory(workingDirectory);
         hyperledgerPeerContainer.addPort(new ContainerPort(undefined, 7051));
         hyperledgerPeerContainer.addPort(new ContainerPort(undefined, 7052));
         hyperledgerPeerContainer.addPort(new ContainerPort(undefined, 7053));
@@ -94,22 +98,31 @@ export default class PeerDeployment {
         hyperledgerPeerContainer.addCommand("-c");
         hyperledgerPeerContainer.addCommand("--");
         hyperledgerPeerContainer.addArgument("sleep 5; peer node start");
+        hyperledgerPeerContainer.setSecurityContext({"priviledged": true});
 
         const hyperledgerMountPath = Path.posix.join(Path.posix.sep, 'etc', 'hyperledger', 'fabric');
 
-        this.organization.addPeerTlsToContainer(this.peer.name(), hyperledgerPeerContainer, Path.posix.join(hyperledgerMountPath, 'tls'));
-        this.organization.addPeerMspToContainer(this.peer.name(), hyperledgerPeerContainer, Path.posix.join(hyperledgerMountPath, 'msp'));
+        this.peer.mountTls(hyperledgerPeerContainer, Path.posix.join(hyperledgerMountPath, 'tls'));
+        this.peer.mountMsp(hyperledgerPeerContainer, Path.posix.join(hyperledgerMountPath, 'msp'));
+        this.peer.mountChainCodes(hyperledgerPeerContainer, Path.posix.join(workingDirectory, "chaincodes"));
         const runHostPathVolumeMount = this.runHostPathVolume.toVolumeMount(Path.posix.join(Path.posix.sep, 'host', 'var', 'run', Path.posix.sep));
         hyperledgerPeerContainer.addVolumeMount(runHostPathVolumeMount);
         this.deployment.addContainer(hyperledgerPeerContainer);
+    }
+
+    private createDnsSettings() {
+        this.dns = [];
+        this.peer.addKubeDnsIpToArray(this.dns);
+        this.dnsSearch = [];
+        this.dnsSearch.push("default.svc.cluster.local");
+        this.dnsSearch.push("svc.cluster.local");
     }
 
     static funnelBaseMountPath() {
         return Path.posix.join(Path.posix.sep, 'usr', 'src', 'app');
     }
 
-    toJson() {
+    toJson(): any {
         return this.deployment.toJson();
     }
-
 }

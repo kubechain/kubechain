@@ -2,9 +2,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import Options from '../../options';
 import ICommandExecutor from "../../../utilities/icommandexecutor";
-import Kubechain from '../../../../kubechain';
+import Kubechain from '../../../../kubechain/kubechain';
 import KubernetesResourceDeleter from '../../../../kubernetes-sdk/utilities/resources/resourcedeleter';
-import KubechainTargets from "../../../../targets";
 import {promptUserForDesiredContext} from "../../../utilities/cluster";
 
 export default class ClusterDeleter implements ICommandExecutor {
@@ -15,8 +14,8 @@ export default class ClusterDeleter implements ICommandExecutor {
         return chain === 'fabric';
     }
 
-    async delete(targets: KubechainTargets) {
-        this.options = new Options(new Kubechain(targets));
+    async delete(kubechain: Kubechain) {
+        this.options = new Options(kubechain);
         try {
             console.info('[REMOVING]');
             this.context = await promptUserForDesiredContext();

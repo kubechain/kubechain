@@ -4,17 +4,19 @@ import Options from "../../../../../options";
 import Container from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
 import EnvVar from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
 import ContainerPort from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
-import PeerOrganization from "../../peer";
 import CertificateAuthorityRepresentation from "../../../../../utilities/blockchain/representation/certificateauthorities/ca/representation";
+import CertificateAuthority from "./ca";
+import IResource from "../../../../../../../kubernetes-sdk/api/1.8/iresource";
 
-export default class CertificateAuthorityDeployment {
-    private organization: PeerOrganization;
+//TODO: Fix duplicate class
+export default class CertificateAuthorityDeployment implements IResource {
+    private certificateAuthority: CertificateAuthority;
     private representation: CertificateAuthorityRepresentation;
     private options: Options;
     private deployment: Deployment;
 
-    constructor(organization: PeerOrganization, representation: CertificateAuthorityRepresentation, options: Options) {
-        this.organization = organization;
+    constructor(certificateAuthority: CertificateAuthority, representation: CertificateAuthorityRepresentation, options: Options) {
+        this.certificateAuthority = certificateAuthority;
         this.representation = representation;
         this.options = options;
 
@@ -25,12 +27,12 @@ export default class CertificateAuthorityDeployment {
     }
 
     private createDeployment(deploymentName: string) {
-        this.deployment = new Deployment(deploymentName, this.organization.namespace());
+        this.deployment = new Deployment(deploymentName, this.certificateAuthority.namespace());
         this.deployment.addMatchLabel("app", "hyperledger");
         this.deployment.addMatchLabel("role", deploymentName);
-        this.deployment.addMatchLabel("org", this.organization.name());
+        this.deployment.addMatchLabel("org", this.certificateAuthority.organizationName());
         this.deployment.addMatchLabel("name", deploymentName);
-        this.organization.addOrganizationVolumeToPodSpec(this.deployment);
+        this.certificateAuthority.addVolumeToPodSpec(this.deployment);
     }
 
     private createFunnelContainer() {
@@ -38,12 +40,11 @@ export default class CertificateAuthorityDeployment {
         const funnelContainer = new Container("funnel", "kubechain/funnel:1.1.0");
 
         const funnelFromMountPath = Path.posix.join(funnelBasePath, 'from');
-        this.organization.addCertificateAuthorityConfigurationToContainer(funnelContainer, funnelFromMountPath);
+        this.certificateAuthority.mountCryptographicMaterial(funnelContainer, funnelFromMountPath);
 
         const funnelToMountPath = Path.posix.join(funnelBasePath, 'to');
-        this.organization.addCertificateAuthorityConfigurationFromVolume(funnelContainer, funnelToMountPath);
-
-        this.organization.addCertificateAuthorityConfigurationAsVolumes(this.deployment);
+        this.certificateAuthority.mountCryptographicMaterialFromVolume(funnelContainer, funnelToMountPath);
+        this.certificateAuthority.addCryptographicMaterialAsVolumes(this.deployment);
         this.deployment.addInitContainer(funnelContainer);
     }
 
@@ -61,17 +62,12 @@ export default class CertificateAuthorityDeployment {
         hyperledgerCaContainer.addArgument("-c");
         hyperledgerCaContainer.addArgument(` fabric-ca-server start --ca.certfile ${caCertFile} --ca.keyfile ${caKeyFile} -b admin:adminpw -d `);
 
-        this.organization.addCertificateAuthorityConfigurationFromVolume(hyperledgerCaContainer, CertificateAuthorityDeployment.hyperledgerMountPath());
-
+        this.certificateAuthority.mountCryptographicMaterialFromVolume(hyperledgerCaContainer, CertificateAuthorityDeployment.hyperledgerMountPath());
         this.deployment.addContainer(hyperledgerCaContainer);
     }
 
     static hyperledgerMountPath() {
         return Path.posix.join(Path.posix.sep, 'etc', 'hyperledger', 'fabric-ca-server-config');
-    }
-
-    static caPath() {
-        return Path.posix.join('ca', Path.posix.sep);
     }
 
     toJson(): any {

@@ -1,6 +1,6 @@
 import FabricKubernetesConfigurationDeleter from "../../../blockchains/fabric/kubernetes/configuration/delete";
 import BurrowKubernetesConfigurationDeleter from "../../../blockchains/burrow/kubernetes/configuration/delete";
-import {argumentsToKubechainTargets} from "../../cli";
+import {createKubechainConfiguration} from "../../cli";
 
 const deleters = [FabricKubernetesConfigurationDeleter, BurrowKubernetesConfigurationDeleter];
 const command = 'kubernetes-config';
@@ -9,21 +9,22 @@ const builder = {
     'blockchain-target': {
         alias: 'b',
         describe: 'The blockchain target',
-        demandOption: true
+        demandOption: false
     },
     'kubernetes-target': {
         alias: 'k',
         describe: 'The Kubernetes target',
-        demandOption: true
+        demandOption: false
     }
 };
 const handler = function (argv: any) {
-    const targets = argumentsToKubechainTargets(argv);
+    const kubechain = createKubechainConfiguration(argv);
+    const targets = kubechain.get('$.targets');
     deleters.forEach(Deleter => {
         const deleter = new Deleter();
-        if (deleter.validCommandForChain(targets.blockchain.name)) {
-            console.log('Deleting Kubernetes configuration for %s', targets.blockchain.name);
-            deleter.delete(targets);
+        if (deleter.validCommandForChain(targets.blockchain)) {
+            console.log('Deleting Kubernetes configuration for %s', targets.blockchain);
+            deleter.delete(kubechain);
         }
     });
 };

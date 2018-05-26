@@ -12,10 +12,6 @@ export default class SeedNode implements INode {
         this.node = new Node(account);
     }
 
-    static equalsAccountType(type: string): boolean {
-        return type === 'full';
-    }
-
     adjustConfigurationForKubernetes() {
         this.node.adjustConfigurationForKubernetes();
     }

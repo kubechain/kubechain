@@ -4,9 +4,8 @@ import * as Nodes from '../../utilities/nodes/nodes';
 import SeedNode from "../../utilities/nodes/seed";
 import PeerNode from "../../utilities/nodes/peer";
 import Options from "../../options";
-import Kubechain from "../../../../kubechain";
+import Kubechain from "../../../../kubechain/kubechain";
 import ICommandExecutor from "../../../utilities/icommandexecutor";
-import KubechainTargets from "../../../../targets";
 
 
 // NOTE: Currently this class does not "create" the configuration.
@@ -19,8 +18,9 @@ export default class ChainConfigurationCreator implements ICommandExecutor {
         return chain === 'burrow';
     }
 
-    create(targets: KubechainTargets) {
-        this.options = new Options(new Kubechain(targets));
+    create(kubechain: Kubechain) {
+        //TODO: max_num_peers = 20
+        this.options = new Options(kubechain);
         console.info("[BURROW CONFIGURATION]");
         this.copyConfigurationToIntermediateDirectory();
         this.changeConfigurations();
@@ -39,13 +39,15 @@ export default class ChainConfigurationCreator implements ICommandExecutor {
         const representations = Accounts.getAccountRepresentationsFromPath(
             this.options.get('$.blockchain.intermediate.paths.configuration')
         );
-        const seeds = Nodes.getSeeds(representations);
-        const seedsFullyQualifiedDomainNames = this.seedsToPeerToPeerAddresses(seeds);
-        const peers = Nodes.getPeers(representations);
-        this.changeConfigurationForSeeds(seeds);
-        this.changeConfigurationForPeers(peers, seedsFullyQualifiedDomainNames);
-    }
+        const amountOfSeeds = this.options.get('$.blockchain.nodes.seeds.amount');
+        const nodes = Nodes.accountRepresentationsToNodes(representations, amountOfSeeds);
 
+        // const seeds = Nodes.getSeeds(representations);
+        const seedsFullyQualifiedDomainNames = this.seedsToPeerToPeerAddresses(nodes.seeds);
+        // const peers = Nodes.getPeers(representations);
+        this.changeConfigurationForSeeds(nodes.seeds);
+        this.changeConfigurationForPeers(nodes.peers, seedsFullyQualifiedDomainNames);
+    }
 
     private changeConfigurationForSeeds(seeds: SeedNode[]) {
         seeds.forEach(seed => {

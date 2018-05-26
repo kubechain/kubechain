@@ -1,8 +1,7 @@
 import Options from "../../options";
-import Kubechain from "../../../../kubechain";
+import Kubechain from "../../../../kubechain/kubechain";
 import KubernetesResourceCreator from '../../../../kubernetes-sdk/utilities/resources/resourcecreator';
 import ICommandExecutor from "../../../utilities/icommandexecutor";
-import KubechainTargets from "../../../../targets";
 import {promptUserForDesiredContext} from "../../../utilities/cluster";
 
 export default class ClusterCreator implements ICommandExecutor {
@@ -10,8 +9,8 @@ export default class ClusterCreator implements ICommandExecutor {
         return chain === "burrow";
     }
 
-    async create(targets: KubechainTargets) {
-        const options = new Options(new Kubechain(targets));
+    async create(kubechain: Kubechain) {
+        const options = new Options(kubechain);
 
         try {
             console.info('[CREATING]');

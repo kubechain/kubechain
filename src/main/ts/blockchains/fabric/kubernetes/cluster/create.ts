@@ -2,9 +2,8 @@ import * as fs from 'fs';
 import * as  path from 'path';
 import ICommandExecutor from "../../../utilities/icommandexecutor";
 import Options from "../../options";
-import Kubechain from "../../../../kubechain";
+import Kubechain from "../../../../kubechain/kubechain";
 import KubernetesResourceCreator from "../../../../kubernetes-sdk/utilities/resources/resourcecreator";
-import KubechainTargets from "../../../../targets";
 import {promptUserForDesiredContext} from "../../../utilities/cluster";
 
 export default class ClusterCreator implements ICommandExecutor {
@@ -15,8 +14,8 @@ export default class ClusterCreator implements ICommandExecutor {
         return chain === 'fabric';
     }
 
-    async create(targets: KubechainTargets) {
-        this.options = new Options(new Kubechain(targets));
+    async create(kubechain: Kubechain) {
+        this.options = new Options(kubechain);
         try {
             console.info('[CREATING]');
             this.context = await promptUserForDesiredContext();

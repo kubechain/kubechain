@@ -1,8 +1,7 @@
 import * as fs from 'fs-extra';
 import Options from "../../options";
 import ICommandExecutor from "../../../utilities/icommandexecutor";
-import Kubechain from "../../../../kubechain";
-import KubechainTargets from "../../../../targets";
+import Kubechain from "../../../../kubechain/kubechain";
 
 export default class KubernetesConfigurationDeleter implements ICommandExecutor {
 
@@ -10,8 +9,8 @@ export default class KubernetesConfigurationDeleter implements ICommandExecutor 
         return chain === 'burrow';
     }
 
-    delete(targets: KubechainTargets) {
-        const options = new Options(new Kubechain(targets));
+    delete(kubechain: Kubechain) {
+        const options = new Options(kubechain);
         fs.removeSync(options.get('$.kubernetes.paths.root'));
     }
 }

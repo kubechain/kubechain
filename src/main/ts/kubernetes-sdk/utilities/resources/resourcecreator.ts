@@ -5,7 +5,7 @@ import * as Kinds from '../kinds/kinds'
 import IKind from "../kinds/ikind";
 import PersistentVolumeClaim from "../kinds/namespaced/persistentvolumeclaim";
 import {kindIsWorkload} from "../kinds/kinds";
-import CrudResource, {default as CrudResource} from "./crud/crud-resource";
+import CrudResource from "./crud/crud-resource";
 
 export default class KubernetesResourceCreator {
     private namespace: string;
@@ -21,7 +21,6 @@ export default class KubernetesResourceCreator {
 
         const Client = KubernetesClient.Client;
         const config = KubernetesClient.config;
-        //TODO: Context picker.
         this.client = new Client({
             config: config.fromKubeconfig(undefined, context),
             version: '1.8'
@@ -129,7 +128,7 @@ export default class KubernetesResourceCreator {
         for (let i = 0; i <= MAX_RETRIES; i++) {
             try {
                 const resource = new CrudResource(persistentVolumeClaim, new PersistentVolumeClaim());
-                const response = await resource.get(this.client);
+                const response = await resource.get(this.client, undefined);
                 if (response && KubernetesResourceCreator.claimIsBound(response.body)) {
                     console.info(`Claim ${persistentVolumeClaim.metadata.name}: Has been bound.`);
                     return Promise.resolve(response);

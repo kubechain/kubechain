@@ -1,100 +1,63 @@
 import * as Path from 'path';
 import Options from "../../../../../options";
-import PersistentVolumeClaim from "../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/persistentvolumeclaim/persistentvolumeclaim";
 import Deployment from "../../../../../../../kubernetes-sdk/api/1.8/workloads/deployment/deployment";
 import IVolume from "../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/ivolume";
-import PeerOrganization from "../../peer";
 import Container from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
 import EnvVar from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
-import ResourceRequirements from "../../../../../../../kubernetes-sdk/api/1.8/meta/resourcerequirements";
-import HostPathPersistentVolume from "../../../../../../../kubernetes-sdk/api/1.8/cluster/persistentvolumes/hostpath/hostpath";
-import ObjectMeta from "../../../../../../../kubernetes-sdk/api/1.8/meta/objectmeta";
-import {toJsonFile} from "../../../../../../../util";
 import DirectoryOrCreateHostPathVolume from "../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/hostpath/directoryorcreate";
+import CommandLineInterFace from "./cli";
+import IResource from "../../../../../../../kubernetes-sdk/api/1.8/iresource";
 
-export default class CommandLineInterfaceDeployment {
-    private organization: PeerOrganization;
+export default class CommandLineInterfaceDeployment implements IResource {
+    private commandLineInterface: CommandLineInterFace;
     private name: string;
-    private fabricOptions: Options;
+    private options: Options;
     private deployment: Deployment;
-    private artifactsVolume: IVolume;
-    private artifactsPersistentVolume: HostPathPersistentVolume;
-    private artifactsPersistentVolumeClaim: PersistentVolumeClaim;
 
-    constructor(organization: PeerOrganization, fabricOptions: Options) {
-        this.organization = organization;
+    constructor(commandLineInterFace: CommandLineInterFace, options: Options) {
+        this.commandLineInterface = commandLineInterFace;
+        this.options = options;
         this.name = "cli";
-        this.fabricOptions = fabricOptions;
 
-        this.createArtifactsVolume();
         this.createDeployment();
         this.createFunnelContainer();
         this.createHyperledgerContainer();
     }
 
-    private createArtifactsVolume() {
-        //TODO: Check how and when artifacts are filled.
-        //TODO: Consider moving this towards single peers or organizations.
-        this.artifactsPersistentVolume = new HostPathPersistentVolume(new ObjectMeta(this.artifactsPersistentVolumeName(), undefined));
-        this.artifactsPersistentVolume.setHostPath(Path.posix.join(Path.posix.sep, 'data', 'artifacts', this.organization.name()));
-        this.artifactsPersistentVolume.setCapacity({"storage": "50Mi"});
-        this.artifactsPersistentVolume.setStorageClassName(this.organization.name() + "-artifacts");
-        this.artifactsPersistentVolume.addAccessMode("ReadWriteOnce");
-        this.artifactsPersistentVolumeClaim = new PersistentVolumeClaim(this.artifactsPersistentVolumeClaimName(), this.organization.name(),
-        );
-        this.artifactsPersistentVolumeClaim.addAccessMode("ReadWriteOnce");
-        this.artifactsPersistentVolumeClaim.setStorageClassName(this.organization.name() + "-artifacts");
-        const requirements = new ResourceRequirements();
-        requirements.setRequests({
-            "storage": "10Mi"
-        });
-        this.artifactsPersistentVolumeClaim.setResourceRequirements(requirements);
-
-        this.artifactsVolume = this.artifactsPersistentVolumeClaim.toVolume();
-    }
-
-    private artifactsPersistentVolumeName() {
-        return this.organization.name() + "-artifacts-pv";
-
-    }
-
-    private artifactsPersistentVolumeClaimName() {
-        return this.organization.name() + "-artifacts-pvc";
-    }
-
     private createDeployment() {
-        this.deployment = new Deployment(this.name, this.organization.namespace());
+        this.deployment = new Deployment(this.name, this.commandLineInterface.namespace());
         this.deployment.addMatchLabel("app", "cli");
-        this.deployment.addVolume(this.artifactsVolume);
-        this.organization.addOrganizationVolumeToPodSpec(this.deployment);
+        this.commandLineInterface.addVolumeToPodSpec(this.deployment);
+        this.commandLineInterface.addChannelsAsVolumes(this.deployment);
+        this.commandLineInterface.addChainCodeAsVolumes(this.deployment);
     }
 
     private createFunnelContainer() {
         const funnelBasePath = Path.posix.join(Path.posix.sep, 'usr', 'src', 'app');
         const funnelFromMountPath = Path.posix.join(funnelBasePath, 'from');
         const funnelContainer = new Container("funnel", "kubechain/funnel:1.1.0");
-
-        this.organization.addPeerAdminConfigurationToContainer(funnelContainer, funnelFromMountPath);
+        this.commandLineInterface.mountPeerAdminCryptographicMaterial(funnelContainer, funnelFromMountPath);
 
         const funnelToMountPath = Path.posix.join(funnelBasePath, 'to');
-        this.organization.addCliMspConfigurationToContainer(funnelContainer, funnelToMountPath);
-        this.organization.addPeerAdminConfigurationAsVolumes(this.deployment);
+        this.commandLineInterface.mountPeerAdminCryptographicMaterialFromVolume(funnelContainer, funnelToMountPath);
+        this.commandLineInterface.addPeerAdminCryptographicMaterialAsVolumes(this.deployment);
 
         this.deployment.addInitContainer(funnelContainer);
     }
 
     private createHyperledgerContainer() {
-        const peerAddress = "peer0." + this.organization.name() + ":7051";
-        const hyperledgerContainer = new Container(this.name, `hyperledger/fabric-tools:x86_64-${this.fabricOptions.get('$.version')}`);
+        const workingDirectory = Path.posix.join(Path.posix.sep, "opt", "gopath", "src", "github.com", "hyperledger", "fabric", "peer");
+        const peerAddress = "peer0." + this.commandLineInterface.organizationName() + ":7051";
+        const hyperledgerContainer = new Container(this.name, `hyperledger/fabric-tools:x86_64-${this.options.get('$.version')}`);
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_TLS_ENABLED", "false"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_VM_ENDPOINT", "unix:///host/var/run/docker.sock"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("GOPATH", "/opt/gopath"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_LOGGING_LEVEL", "DEBUG"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_ID", this.name));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_ADDRESS", peerAddress));
-        hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_LOCALMSPID", this.organization.mspID()));
+        hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_LOCALMSPID", this.commandLineInterface.mspID()));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_MSPCONFIGPATH", "/etc/hyperledger/fabric/msp"));
-        hyperledgerContainer.setWorkingDirectory("/opt/gopath/src/github.com/hyperledger/fabric/peer");
+        hyperledgerContainer.setWorkingDirectory(workingDirectory);
         hyperledgerContainer.addCommand("/bin/bash");
         hyperledgerContainer.addCommand("-c");
         hyperledgerContainer.addCommand("--");
@@ -106,17 +69,14 @@ export default class CommandLineInterfaceDeployment {
         this.deployment.addVolume(runHostPathVolume);
 
         const hyperLedgerMountPath = Path.posix.join(Path.posix.sep, 'etc', 'hyperledger', 'fabric', 'msp');
-        this.organization.addCliMspConfigurationToContainer(hyperledgerContainer, hyperLedgerMountPath);
-        //TODO: Check usage of channel-artifacts
-        hyperledgerContainer.addVolumeMount(this.artifactsVolume.toVolumeMount("/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts"));
+        this.commandLineInterface.mountMspCryptographicMaterial(hyperledgerContainer, hyperLedgerMountPath);
+        this.commandLineInterface.mountChannels(hyperledgerContainer, Path.posix.join(workingDirectory, "channels"));
+        this.commandLineInterface.mountChainCodes(hyperledgerContainer, Path.posix.join(workingDirectory, "chaincodes"));
 
         this.deployment.addContainer(hyperledgerContainer);
-
     }
 
-    toKubernetesResource(outputPath: string) {
-        toJsonFile(outputPath, this.name, this.deployment.toJson());
-        toJsonFile(outputPath, this.artifactsPersistentVolumeName(), this.artifactsPersistentVolume.toJson());
-        toJsonFile(outputPath, this.artifactsPersistentVolumeClaimName(), this.artifactsPersistentVolumeClaim.toJson());
+    toJson(): any {
+        return this.deployment.toJson();
     }
 }

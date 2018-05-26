@@ -1,12 +1,10 @@
 import ObjectMeta from "../../../meta/objectmeta";
 import IConfigurationResource from "../iconfigurationresource";
-import IConfigMapVolumeSource from "../../storage/volumes/volumesources/configmap/iconfigmapvolumesource";
 import KeyToPath from "../../storage/volumes/volumesources/keytopath";
-import IVolumeSource from "../../storage/volumes/volumesources/ivolumesource";
-import ConfigMapVolumeSource from "../../storage/volumes/volumesources/configmap/configmapvolumesource";
+import ConfigMapVolumeSource from "../../storage/volumes/volumesources/configuration/configmap/configmapvolumesource";
 import IVolume from "../../storage/volumes/ivolume";
 
-export default class ConfigMap implements IConfigurationResource, IConfigMapVolumeSource, IVolumeSource {
+export default class ConfigMap implements IConfigurationResource {
     private metadata: ObjectMeta;
     private data: any;
     private volumeSource: ConfigMapVolumeSource;

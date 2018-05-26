@@ -1,11 +1,10 @@
-import IConfigurationResource from "../iconfigurationresource";
 import ObjectMeta from "../../../meta/objectmeta";
-import SecretVolumeSource from "../../storage/volumes/volumesources/secret/secretvolumesource";
+import SecretVolumeSource from "../../storage/volumes/volumesources/configuration/secret/secretvolumesource";
 import KeyToPath from "../../storage/volumes/volumesources/keytopath";
 import IVolume from "../../storage/volumes/ivolume";
-import ISecret from "./isecret";
+import IConfigurationResource from "../iconfigurationresource";
 
-export default class Secret implements ISecret {
+export default class Secret implements IConfigurationResource {
     private data: any;
     private metadata: ObjectMeta;
     private type: string;

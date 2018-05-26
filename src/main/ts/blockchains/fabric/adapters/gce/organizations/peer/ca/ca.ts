@@ -2,7 +2,6 @@ import CertificateAuthorityService from './service';
 import CertificateAuthorityDeployment from './deployment';
 import Options from "../../../../../options";
 import PeerOrganization from "../../peer";
-import {toJsonFile} from "../../../../../../../util";
 import CertificateAuthorityRepresentation from "../../../../../utilities/blockchain/representation/certificateauthorities/ca/representation";
 import IPodSpec from "../../../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import IContainer from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
@@ -12,20 +11,21 @@ import ConfigMapTuples from "../../../../../utilities/kubernetes/configmaptuples
 import PersistentVolumeClaim from "../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/persistentvolumeclaim/persistentvolumeclaim";
 import ResourceRequirements from "../../../../../../../kubernetes-sdk/api/1.8/meta/resourcerequirements";
 import IVolume from "../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/ivolume";
+import ResourceWriter from "../../../../../utilities/blockchain/resourcewriter/resourcewriter";
+import IHasResources from "../../../../../utilities/blockchain/organizations/ihasresources";
+import ICertificateAuthority from "../../../../../utilities/blockchain/organizations/peer/entities/ca/icertificateauthority";
 
-export default class CertificateAuthority {
+export default class CertificateAuthority implements IHasResources, ICertificateAuthority {
     private organization: PeerOrganization;
     private representation: CertificateAuthorityRepresentation;
     private options: Options;
-    private configuration: ConfigMapTuples;
     private persistentVolumeClaim: PersistentVolumeClaim;
     private volume: IVolume;
 
-    constructor(organization: PeerOrganization, representation: CertificateAuthorityRepresentation, options: Options, organizationConfiguration: ConfigMapTuples) {
+    constructor(organization: PeerOrganization, representation: CertificateAuthorityRepresentation, options: Options) {
         this.organization = organization;
         this.representation = representation;
         this.options = options;
-        this.configuration = organizationConfiguration;
 
         this.createVolume();
     }
@@ -38,46 +38,6 @@ export default class CertificateAuthority {
         return this.organization.name();
     }
 
-    addConfigurationToContainer(container: IContainer, mountPath: string) {
-        const tuples = this.configuration.findTuplesForRelativePath(this.hostCaPath());
-        tuples.forEach((tuple: ConfigMapTuple) => {
-            tuple.addConfigMapAsVolumeMount(container, mountPath);
-        });
-    }
-
-    addConfigurationFromVolume(container: IContainer, mountPath: string) {
-        const volumeMount = this.volume.toVolumeMount(mountPath);
-        volumeMount.setSubPath(this.caPath());
-        container.addVolumeMount(volumeMount);
-    }
-
-    private caPath() {
-        return Path.posix.join('ca', Path.posix.sep);
-    }
-
-    private hostCaPath() {
-        return 'ca';
-    }
-
-    addConfigurationAsVolumes(spec: IPodSpec) {
-        const tuples = this.configuration.findTuplesForRelativePath(this.hostCaPath());
-        tuples.forEach((tuple: ConfigMapTuple) => {
-            tuple.addConfigMapAsVolume(spec);
-        });
-    }
-
-    toKubernetesResource(outputPath: string) {
-        const caService = new CertificateAuthorityService(this.organization.name());
-        const caDeployment = new CertificateAuthorityDeployment(this, this.representation, this.options);
-        toJsonFile(outputPath, "ca-deployment", caDeployment.toJson());
-        toJsonFile(outputPath, "ca-service", caService.toJson());
-        toJsonFile(outputPath, "ca-pvc", this.persistentVolumeClaim.toJson());
-    }
-
-    addVolumeToPodSpec(podSpec: IPodSpec) {
-        podSpec.addVolume(this.volume);
-    }
-
     private createVolume() {
         this.persistentVolumeClaim = new PersistentVolumeClaim("ca", this.organization.namespace());
         this.persistentVolumeClaim.addAccessMode("ReadWriteOnce");
@@ -85,5 +45,36 @@ export default class CertificateAuthority {
         requirements.setRequests({"storage": "10Mi"});
         this.persistentVolumeClaim.setResourceRequirements(requirements);
         this.volume = this.persistentVolumeClaim.toVolume();
+    }
+
+    addResources(writer: ResourceWriter, outputPath: string) {
+        const caService = new CertificateAuthorityService(this.organization.name());
+        const caDeployment = new CertificateAuthorityDeployment(this, this.representation, this.options);
+
+        writer.addWorkload({path: outputPath, name: "ca-deployment", resource: caDeployment});
+        writer.addResource({path: outputPath, name: "ca-service", resource: caService});
+        writer.addResource({path: outputPath, name: "ca-pvc", resource: this.persistentVolumeClaim});
+    }
+
+    mountCryptographicMaterial(container: IContainer, mountPath: string): void {
+        this.organization.mountCertificateAuthorityCryptographicMaterial(container, mountPath);
+    }
+
+    mountCryptographicMaterialFromVolume(container: IContainer, mountPath: string) {
+        const volumeMount = this.volume.toVolumeMount(mountPath);
+        volumeMount.setSubPath(this.caPathInContainer());
+        container.addVolumeMount(volumeMount);
+    }
+
+    private caPathInContainer() {
+        return Path.posix.join('ca', Path.posix.sep);
+    }
+
+    addCryptographicMaterialAsVolumes(spec: IPodSpec): void {
+        this.organization.addCertificateAuthorityCryptographicMaterialAsVolumes(spec);
+    }
+
+    addVolumeToPodSpec(podSpec: IPodSpec) {
+        podSpec.addVolume(this.volume);
     }
 }

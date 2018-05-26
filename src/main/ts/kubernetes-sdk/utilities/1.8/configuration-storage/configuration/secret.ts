@@ -2,9 +2,9 @@ import * as Path from "path";
 import * as fs from "fs-extra";
 import OpaqueSecret from "../../../../api/1.8/configuration-storage/configuration/secret/opaquesecret";
 import {findFilesInDirectory} from "../../../../../util";
-import ISecret from "../../../../api/1.8/configuration-storage/configuration/secret/isecret";
 import {fileNameToPosixFileName} from "../../../naming";
 import KeyToPath from "../../../../api/1.8/configuration-storage/storage/volumes/volumesources/keytopath";
+import IConfigurationResource from "../../../../api/1.8/configuration-storage/configuration/iconfigurationresource";
 
 function directoryToOpaqueSecret(path: string, name: string, namespace: string): OpaqueSecret {
     const opaqueSecret = new OpaqueSecret(name, namespace);
@@ -21,11 +21,11 @@ function directoryToOpaqueSecret(path: string, name: string, namespace: string):
     return opaqueSecret;
 }
 
-function fileToDataPair(configMap: ISecret, path: string) {
+function fileToDataPair(configurationResource: IConfigurationResource, path: string) {
     const fileName = Path.basename(path);
     const key = fileNameToPosixFileName(fileName);
-    configMap.addDataPair(key, fs.readFileSync(path));
-    configMap.addItem(new KeyToPath(key, fileName));
+    configurationResource.addDataPair(key, fs.readFileSync(path));
+    configurationResource.addItem(new KeyToPath(key, fileName));
 }
 
 export {directoryToOpaqueSecret}

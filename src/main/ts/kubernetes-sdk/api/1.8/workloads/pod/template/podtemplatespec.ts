@@ -18,7 +18,6 @@ export default class PodTemplateSpec implements IPodTemplateSpec {
         this.spec = spec;
     }
 
-    //TODO: Consider creating an interface for this.
     addLabel(key: string, value: any) {
         this.metadata.addLabel(key, value)
     }

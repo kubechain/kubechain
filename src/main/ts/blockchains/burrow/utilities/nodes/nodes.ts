@@ -3,50 +3,47 @@ import Representation from "../accounts/representation";
 import SeedNode from "./seed";
 import INode from "./inode";
 import UknownNode from "./unknown";
-
-const nodeTypes = [PeerNode, SeedNode];
-
-function getNodeForAccount(account: Representation): INode {
-    for (let index = 0; index < nodeTypes.length; index++) {
-        const NodeType = nodeTypes[index];
-        if (NodeType.equalsAccountType(account.type)) {
-            return new NodeType(account);
-        }
-    }
-
-    return new UknownNode();
-}
-
-function getPeers(accounts: Representation[]): PeerNode[] {
-    const peers: PeerNode[] = [];
-    accounts.forEach(account => {
-        if (PeerNode.equalsAccountType(account.type)) {
-            peers.push(new PeerNode(account));
-        }
-    });
-    return peers;
-}
+import * as toml from "toml";
+import * as fs from "fs-extra";
 
 function getPeerRepresentations(accounts: Representation[]): Representation[] {
     return accounts.filter((representation: Representation) => {
-        return PeerNode.equalsAccountType(representation.type)
-    });
-}
-
-function getSeeds(accounts: Representation[]): SeedNode[] {
-    const seeds: SeedNode[] = [];
-    accounts.forEach(account => {
-        if (SeedNode.equalsAccountType(account.type)) {
-            seeds.push(new SeedNode(account));
+        const configTomlFileContents = fs.readFileSync(representation.filePaths.config);
+        const configTomlObject = toml.parse(configTomlFileContents.toString());
+        if (configTomlObject.tendermint.configuration.seeds !== "") {
+            return representation;
         }
     });
-    return seeds;
 }
 
 function getSeedRepresentations(accounts: Representation[]): Representation[] {
     return accounts.filter((representation: Representation) => {
-        return SeedNode.equalsAccountType(representation.type)
+        const configTomlFileContents = fs.readFileSync(representation.filePaths.config);
+        const configTomlObject = toml.parse(configTomlFileContents.toString());
+        if (configTomlObject.tendermint.configuration.seeds === "") {
+            return representation;
+        }
     });
 }
 
-export {getPeers, getSeeds, getSeedRepresentations, getPeerRepresentations};
+function accountRepresentationsToNodes(accounts: Representation[], amountOfSeeds: number): { seeds: SeedNode[], peers: PeerNode[] } {
+    const seeds: SeedNode[] = [];
+    const peers: PeerNode[] = [];
+
+    for (let i = 0; i < accounts.length; i++) {
+        const account = accounts[i];
+        if (i < amountOfSeeds) {
+            seeds.push(new SeedNode(account));
+        }
+        else {
+            peers.push(new PeerNode(account));
+        }
+    }
+
+    return {
+        seeds: seeds,
+        peers: peers
+    };
+}
+
+export {getSeedRepresentations, getPeerRepresentations, accountRepresentationsToNodes};

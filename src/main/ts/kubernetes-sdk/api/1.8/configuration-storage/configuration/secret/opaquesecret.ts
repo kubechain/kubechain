@@ -1,9 +1,9 @@
 import IVolume from "../../storage/volumes/ivolume";
 import KeyToPath from "../../storage/volumes/volumesources/keytopath";
 import Secret from "./secret";
-import ISecret from "./isecret";
+import IConfigurationResource from "../iconfigurationresource";
 
-export default class OpaqueSecret implements ISecret {
+export default class OpaqueSecret implements IConfigurationResource {
     private secret: Secret;
 
     constructor(name: string, namespace: string) {

@@ -5,7 +5,7 @@ import Deployment from "../../../../../../kubernetes-sdk/api/1.8/workloads/deplo
 import Container from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
 import EnvVar from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
 import ContainerPort from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
-import ConfigMapTuples from "../../../../utilities/kubernetes/configmaptuples";
+import IHooks from "../../../../../utilities/iadapterhooks";
 
 export default class OrdererDeployment {
     private options: Options;
@@ -13,47 +13,52 @@ export default class OrdererDeployment {
     private name: string;
     private localMSPID: string;
     private deployment: Deployment;
-    private configMapTuples: ConfigMapTuples;
+    private hooks: IHooks;
 
-    constructor(orderer: Orderer, options: Options, configMapTuples: ConfigMapTuples) {
+    constructor(orderer: Orderer, options: Options) {
         this.orderer = orderer;
         this.options = options;
-        this.configMapTuples = configMapTuples;
+        this.hooks = options.get('$.hooks');
         this.name = this.orderer.id() + "-" + this.orderer.organizationName();
         this.localMSPID = orderer.mspID();
 
-        this.createDeployment();
-        this.createFunnelContainer();
-        this.createHyperledgerContainer();
+        this.createWorkload();
     }
 
-    private createDeployment() {
-        this.deployment = new Deployment(this.name, this.orderer.namespace());
+    private createWorkload() {
+        this.hooks.workload.beforeCreate({});
+        this.deployment = new Deployment(this.name, this.orderer.organizationName());
         this.deployment.addMatchLabel("app", "hyperledger");
         this.deployment.addMatchLabel("role", "orderer");
         this.deployment.addMatchLabel("org", this.orderer.organizationName());
         this.deployment.addMatchLabel("orderer-id", this.orderer.id());
 
-        this.orderer.addOrganizationVolumeToPodSpec(this.deployment);
+        this.orderer.addVolume(this.deployment);
+        this.orderer.addGenesisBlockAsVolume(this.deployment);
+        this.orderer.addCryptographicMaterialAsVolumes(this.deployment);
+
+        this.addContainers()
     }
 
-    private createFunnelContainer() {
+    private addContainers() {
+        this.addFunnelContainer();
+        this.addHyperledgerContainer();
+    }
+
+    private addFunnelContainer() {
         const funnelContainer = new Container("funnel", "kubechain/funnel:1.1.0");
         const funnelFromMountPath = Path.posix.join(this.funnelBaseMountPath(), 'from');
-
-        this.orderer.addConfigurationToContainer(funnelContainer, funnelFromMountPath);
-
-        this.orderer.addConfigurationAsVolume(this.deployment);
-        this.orderer.addGenesisBlockAsVolume(this.deployment);
-        this.orderer.addGenesisBlockVolumeToContainer(funnelContainer, funnelFromMountPath);
+        this.orderer.mountCryptographicMaterial(funnelContainer, funnelFromMountPath);
+        this.orderer.mountGenesisBlock(funnelContainer, funnelFromMountPath);
 
         const funnelToMountPath = Path.posix.join(this.funnelBaseMountPath(), 'to');
-        this.orderer.addGenesisBlockToOrganizationVolume(funnelContainer, Path.posix.join(funnelToMountPath, 'genesis'));
-        this.orderer.addConfigurationToOrganizationVolume(funnelContainer, funnelToMountPath);
+        this.orderer.mountGenesisBlockDirectoryFromVolume(funnelContainer, Path.posix.join(funnelToMountPath, 'genesis'));
+        this.orderer.mountCryptographicMaterialFromVolume(funnelContainer, funnelToMountPath);
         this.deployment.addInitContainer(funnelContainer);
     }
 
-    private createHyperledgerContainer() {
+    //TODO: Check how/where orderers store channel genesis blocks.
+    private addHyperledgerContainer() {
         const hyperledgerMountPath = Path.posix.join(Path.posix.sep, 'var', 'hyperledger', 'orderer');
         const genesisBlockMountPath = Path.posix.join(hyperledgerMountPath, 'orderer.genesis.block');
         const mspMountPath = Path.posix.join(hyperledgerMountPath, 'msp');
@@ -69,18 +74,16 @@ export default class OrdererDeployment {
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("ORDERER_GENERAL_TLS_PRIVATEKEY", "/var/hyperledger/orderer/tls/server.key"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("ORDERER_GENERAL_TLS_CERTIFICATE", "/var/hyperledger/orderer/tls/server.crt"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("ORDERER_GENERAL_TLS_ROOTCAS", "[/var/hyperledger/orderer/tls/ca.crt]"));
-        hyperledgerContainer.setWorkingDirectory("/opt/gopath/src/github.com/hyperledger/fabric/peer");
+        hyperledgerContainer.setWorkingDirectory("/opt/gopath/src/github.com/hyperledger/fabric/peer"); //TODO: Is this correct?
         hyperledgerContainer.addPort(new ContainerPort(undefined, 7050));
         hyperledgerContainer.addCommand("orderer");
 
-
-        this.orderer.addGenesisBlockToContainer(hyperledgerContainer, genesisBlockMountPath);
-        this.orderer.addMspToContainer(hyperledgerContainer, mspMountPath);
-        this.orderer.addTlsToContainer(hyperledgerContainer, tlsMountPath);
+        this.orderer.mountGenesisBlockFileFromVolume(hyperledgerContainer, genesisBlockMountPath);
+        this.orderer.mountMsp(hyperledgerContainer, mspMountPath);
+        this.orderer.mountTls(hyperledgerContainer, tlsMountPath);
 
         this.deployment.addContainer(hyperledgerContainer);
     }
-
 
     private funnelBaseMountPath() {
         return Path.posix.join(Path.posix.sep, 'usr', 'src', 'app');
