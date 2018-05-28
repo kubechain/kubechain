@@ -10,9 +10,9 @@ export default class PeerOrganization implements IOrganization {
     private organization: Organization;
     private path: string;
 
-    constructor(name: string, path: string) {
+    constructor(name: string, path: string, domain: string, mspId: string) {
         this.path = path;
-        this.organization = new Organization(name, path, 'peer');
+        this.organization = new Organization(name, path, 'peer', domain, mspId);
         this.addPeers();
     }
 

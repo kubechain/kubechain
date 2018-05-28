@@ -16,18 +16,22 @@ export default class Organization implements IOrganization {
     private name: string;
     private path: string;
     private type: string;
+    private domain: string;
+    private mspId: string;
     private certificateAuthority: CertificateAuthority;
     private membershipServiceProvider: MembershipServiceProvider;
     private tlsCertificateAuthority: TlsCertificateAuthority;
     private users: IUser[];
     private entities: any[];
 
-    constructor(name: string, path: string, type: string) {
+    constructor(name: string, path: string, type: string, domain: string, mspId: string) {
         this.name = name;
         this.path = path;
         this.type = type;
+        this.domain = domain;
+        this.mspId = mspId;
         this.certificateAuthority = new CertificateAuthority(name, Path.join(path, 'ca'));
-        this.membershipServiceProvider = new MembershipServiceProvider(name, Path.join(path, 'msp'));
+        this.membershipServiceProvider = new MembershipServiceProvider(mspId, Path.join(path, 'msp'));
         this.tlsCertificateAuthority = new TlsCertificateAuthority(name, Path.join(path, 'tlsca'));
         this.users = [];
         this.entities = [];
@@ -60,6 +64,8 @@ export default class Organization implements IOrganization {
             name: this.name,
             type: this.type,
             path: this.path,
+            domain: this.domain,
+            mspId: this.mspId,
             certificateAuthority: this.certificateAuthority.toJson(),
             membershipServiceProvider: this.membershipServiceProvider.toJson(),
             tlsCertificateAuthority: this.tlsCertificateAuthority.toJson(),

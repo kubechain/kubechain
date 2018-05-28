@@ -1,38 +1,23 @@
-import * as Util from "../../../../../util";
-import OrganizationRepresentation from "../representation/organizations/representation";
-import Options from "../../../options";
 import IOrganization from "./iorganization";
+import OrganizationRepresentation from "../representation/organizations/representation";
+import {toDNS1123} from "../../../../../kubernetes-sdk/utilities/naming";
 
 export default class Organization implements IOrganization {
     private representation: OrganizationRepresentation;
 
-    constructor(representation: OrganizationRepresentation, options: Options) {
+    constructor(representation: OrganizationRepresentation) {
         this.representation = representation;
     }
 
     name(): string {
-        return this.representation.name;
+        return toDNS1123(this.representation.name);
     }
 
     namespace(): string {
-        return this.representation.name;
+        return this.representation.domain;
     }
 
     mspID(): string {
-        return Util.capitalize(this.representation.name.split('-')[0]) + "MSP";
+        return this.representation.mspId;
     }
-
-    // addressSegment() {
-    //     const gap = 100;
-    //     //Original source uses a number in the organizations' domain spec as the addressSegment.
-    //     //This is based on name of the organizations. Should a user choose not to use org1 or org2 as names the code will break.
-    //     //TODO: If this code is to be published and used this should be altered.
-    //     return (parseInt(this.representation.name.split("-")[0].split("org")[1])) * gap;
-    // }
-
-
-    // minikubeSharedFolder(): string {
-    //     return Path.posix.join(Path.posix.sep, 'data', '.kubechain', 'fabric', this.representation.name);
-    // }
 }
-

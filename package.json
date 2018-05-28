@@ -1,6 +1,6 @@
 {
   "name": "kubechain",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "",
   "main": "./src/main/lib/index.js",
   "bin": {
@@ -23,6 +23,7 @@
     "toml": "^2.3.3",
     "tomlify-j0.4": "^3.0.0",
     "uuid": "^3.2.1",
+    "yamljs": "^0.3.0",
     "yargs": "^11.1.0"
   },
   "scripts": {
@@ -39,6 +40,7 @@
     "@types/node": "^9.6.2",
     "@types/shelljs": "^0.7.8",
     "@types/uuid": "^3.4.3",
+    "@types/yamljs": "^0.2.30",
     "@types/yargs": "^11.0.0",
     "typescript": "^2.8.1"
   }

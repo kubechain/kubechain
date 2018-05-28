@@ -2,38 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-
 ---
-################################################################################
-#
-#   Profile
-#
-#   - Different configuration profiles may be encoded here to be specified
-#   as parameters to the configtxgen tool
-#
-################################################################################
-Profiles:
-
-    TwoOrgsOrdererGenesis:
-        Orderer:
-            <<: *OrdererDefaults
-            Organizations:
-                - *OrdererOrg
-        Consortiums:
-            SampleConsortium:
-                Organizations:
-                    - *Org1
-                    - *Org2
-                    - *Org3
-    TwoOrgsChannel:
-        Consortium: SampleConsortium
-        Application:
-            <<: *ApplicationDefaults
-            Organizations:
-                - *Org1
-                - *Org2
-                - *Org3
-
 ################################################################################
 #
 #   Section: Organizations
@@ -43,69 +12,36 @@ Profiles:
 #
 ################################################################################
 Organizations:
-
-    # SampleOrg defines an MSP using the sampleconfig.  It should never be used
-    # in production but may be used as a template for other definitions
     - &OrdererOrg
-        # DefaultOrg defines the organization which is used in the sampleconfig
-        # of the fabric.git development environment
         Name: OrdererOrg
-
-        # ID to load the MSP definition as
-        ID: OrdererorgMSP
-
-        # MSPDir is the filesystem path which contains the MSP configuration
-        MSPDir: crypto-config/ordererOrganizations/ordererorg-f-1/msp
+        ID: OrdererOrgMSP
+        MSPDir: crypto-config/ordererOrganizations/ordererorg/msp
 
     - &Org1
-        # DefaultOrg defines the organization which is used in the sampleconfig
-        # of the fabric.git development environment
-        Name: Org1MSP
-
-        # ID to load the MSP definition as
+        Name: Org1
         ID: Org1MSP
-
-        MSPDir: crypto-config/peerOrganizations/org1-f-1/msp
+        MSPDir: crypto-config/peerOrganizations/org1/msp
 
         AnchorPeers:
-            # AnchorPeers defines the location of peers which can be used
-            # for cross org gossip communication.  Note, this value is only
-            # encoded in the genesis block in the Application section context
-            - Host: peer0.org1-f-1
+            - Host: peer0.org1
               Port: 7051
 
     - &Org2
-        # DefaultOrg defines the organization which is used in the sampleconfig
-        # of the fabric.git development environment
-        Name: Org2MSP
-
-        # ID to load the MSP definition as
+        Name: Org2
         ID: Org2MSP
-
-        MSPDir: crypto-config/peerOrganizations/org2-f-1/msp
+        MSPDir: crypto-config/peerOrganizations/org2/msp
 
         AnchorPeers:
-            # AnchorPeers defines the location of peers which can be used
-            # for cross org gossip communication.  Note, this value is only
-            # encoded in the genesis block in the Application section context
-            - Host: peer0.org2-f-1
+            - Host: peer0.org2
               Port: 7051
 
     - &Org3
-        # DefaultOrg defines the organization which is used in the sampleconfig
-        # of the fabric.git development environment
-        Name: Org3MSP
-
-        # ID to load the MSP definition as
+        Name: Org3
         ID: Org3MSP
-
-        MSPDir: crypto-config/peerOrganizations/org3-f-1/msp
+        MSPDir: crypto-config/peerOrganizations/org3/msp
 
         AnchorPeers:
-            # AnchorPeers defines the location of peers which can be used
-            # for cross org gossip communication.  Note, this value is only
-            # encoded in the genesis block in the Application section context
-            - Host: peer0.org3-f-1
+            - Host: peer0.org3
               Port: 7051
 
 
@@ -119,13 +55,9 @@ Organizations:
 #
 ################################################################################
 Orderer: &OrdererDefaults
-
-    # Orderer Type: The orderer implementation to start
-    # Available types are "solo" and "kafka"
     OrdererType: solo
-
     Addresses:
-        - orderer0.ordererorg-f-1:7050
+        - orderer0.ordererorg:7050
 
     # Batch Timeout: The amount of time to wait before creating a batch
     BatchTimeout: 2s
@@ -168,3 +100,32 @@ Application: &ApplicationDefaults
     # Organizations is the list of orgs which are defined as participants on
     # the application side of the network
     Organizations:
+
+################################################################################
+#
+#   Profile
+#
+#   - Different configuration profiles may be encoded here to be specified
+#   as parameters to the configtxgen tool
+#
+################################################################################
+Profiles:
+    TwoOrgsOrdererGenesis:
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *OrdererOrg
+        Consortiums:
+            SampleConsortium:
+                Organizations:
+                    - *Org1
+                    - *Org2
+                    - *Org3
+    TwoOrgsChannel:
+        Consortium: SampleConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *Org1
+                - *Org2
+                - *Org3

@@ -46,6 +46,7 @@ export default class Adapter implements IAdapter {
             peers: peerRepresentations
         });
 
+        console.info('Creating Orderer Organizations');
         ordererRepresentations.forEach((representation: OrganizationRepresentation) => {
             new OrdererOrganization(this.options, representation).addResources(this.writer);
         });

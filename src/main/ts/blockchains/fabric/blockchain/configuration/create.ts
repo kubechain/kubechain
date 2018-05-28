@@ -9,11 +9,12 @@ import Options from "../../options";
 
 import * as Platforms from '../../utilities/host/platforms/platforms';
 import * as Architectures from '../../utilities/host/architectures/architectures';
-import {createDirectories, findShellDependencies} from "../../../../util";
+import {findShellDependencies} from "../../../../util";
 import IArchitecture from "../../utilities/host/architectures/iarchitecture";
 import {executeCommand} from "../../../utilities/shellcommand";
 import ChannelCreator from "../../utilities/blockchain/channel/creator";
 import ChannelOptions from "../../utilities/blockchain/channel/options";
+import ConfigTx from "../../utilities/blockchain/configuration/configtx";
 
 export default class ChainConfigurationCreator implements ICommandExecutor {
     private kubechain: Kubechain;
@@ -29,7 +30,6 @@ export default class ChainConfigurationCreator implements ICommandExecutor {
         return new Promise(async (resolve, reject) => {
             try {
                 console.info('[FABRIC CONFIGURATION]');
-                this.createDirectories();
                 await this.verifyFabricBinaries();
                 await this.createCryptogpraphicMaterial();
                 await this.createChannelTransactions();
@@ -71,11 +71,6 @@ export default class ChainConfigurationCreator implements ICommandExecutor {
     findShellDependenciesInBin() {
         const binaryPath = this.options.get('$.blockchain.paths.bin');
         return findShellDependencies([path.join(binaryPath, "cryptogen"), path.join(binaryPath, "configtxgen")]);
-    }
-
-    private createDirectories() {
-        console.info("Creating directories");
-        createDirectories(this.options.getAll('$.blockchain..paths.*'));
     }
 
     private downloadFabricTarball() {
@@ -174,33 +169,25 @@ export default class ChainConfigurationCreator implements ICommandExecutor {
         shell.cd(this.kubechain.get('$.paths.root'));
     }
 
-    /**
-     * After creating a configuration profile as desired, simply invoke
-
-     configtxgen -profile <profile_name> -outputBlock orderer_genesisblock.pb
-
-     This will produce an orderer_genesisblock.pb file in the current directory.
-     This genesis block is used to bootstrap the ordering system channel, which the orderers use to authorize and orchestrate creation of other channels.
-     By default, the channel ID encoded into the genesis block by configtxgen will be testchainid.
-     It is recommended that you modify this identifier to something which will be globally unique.
-
-     Then, to utilize this genesis block, before starting the orderer,
-     simply specify ORDERER_GENERAL_GENESISMETHOD=file and ORDERER_GENERAL_GENESISFILE=$PWD/orderer_genesisblock.pb or modify the orderer.yaml file to encode these values.
-     * @returns {Promise<>}
-     * @private
-     */
     private createGenesisBlock() {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             console.info("Generating genesis block");
-            executeCommand(this.genesisBlockCommand(), {silent: true}).then(() => {
+            const command = await this.genesisBlockCommand();
+            executeCommand(command, {silent: true}).then(() => {
                 this.copyGenesisBlockToOrderers();
                 resolve();
             }).catch(reject);
         });
     }
 
-    private genesisBlockCommand() {
-        return `"${path.join(this.options.get('$.blockchain.paths.bin'), 'configtxgen')}" -profile TwoOrgsOrdererGenesis -outputBlock "${path.join(this.options.get('$.blockchain.paths.root'), 'genesis.block')}"`;
+    private async genesisBlockCommand() {
+        const profile = await this.promptUserForProfile();
+        return `"${path.join(this.options.get('$.blockchain.paths.bin'), 'configtxgen')}" -profile ${profile} -outputBlock "${path.join(this.options.get('$.blockchain.paths.root'), 'genesis.block')}"`;
+    }
+
+    private promptUserForProfile() {
+        const configTx = new ConfigTx(this.options.get('$.blockchain.configuration.paths.configtx'));
+        return configTx.promptUserForProfile();
     }
 
     private copyGenesisBlockToOrderers() {

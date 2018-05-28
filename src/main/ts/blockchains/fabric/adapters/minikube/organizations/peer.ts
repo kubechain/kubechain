@@ -85,10 +85,6 @@ export default class PeerOrganization implements IOrganization, IChainCodeCollec
         return this.organization.namespace();
     }
 
-    addressSegment() {
-        return this.organization.addressSegment();
-    }
-
     mspID() {
         return this.organization.mspID();
     }

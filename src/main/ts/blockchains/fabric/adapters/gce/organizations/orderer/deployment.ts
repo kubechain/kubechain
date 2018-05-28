@@ -74,7 +74,7 @@ export default class OrdererDeployment {
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("ORDERER_GENERAL_TLS_PRIVATEKEY", "/var/hyperledger/orderer/tls/server.key"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("ORDERER_GENERAL_TLS_CERTIFICATE", "/var/hyperledger/orderer/tls/server.crt"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("ORDERER_GENERAL_TLS_ROOTCAS", "[/var/hyperledger/orderer/tls/ca.crt]"));
-        hyperledgerContainer.setWorkingDirectory("/opt/gopath/src/github.com/hyperledger/fabric/peer"); //TODO: Is this correct?
+        hyperledgerContainer.setWorkingDirectory("/opt/gopath/src/github.com/hyperledger/fabric/orderer");
         hyperledgerContainer.addPort(new ContainerPort(undefined, 7050));
         hyperledgerContainer.addCommand("orderer");
 

@@ -8,6 +8,8 @@ export default interface OrganizationRepresentation {
     name: string
     type: string
     path: string
+    domain: string
+    mspId: string
     certificateAuthority: CertificateAuthorityRepresentation
     membershipServiceProvider: MembershipServiceProviderRepresentation
     tlsCertificateAuthority: TlscCrtificateAuthorityRepresentation

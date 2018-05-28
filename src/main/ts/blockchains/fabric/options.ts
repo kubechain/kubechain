@@ -6,7 +6,6 @@ import IHooks from "../utilities/iadapterhooks";
 import KubechainTargets from "../../kubechain/targets";
 import IChannel from "./utilities/blockchain/channel/options";
 import IChainCode from "./utilities/blockchain/chaincode/options";
-import IWorkloadHooks from "../utilities/iworkloadhooks";
 
 interface FabricOptions {
     name: string
@@ -30,7 +29,13 @@ interface FabricOptions {
             bin: string
             channels: string
             chaincodes: string
-        },
+        }
+        configuration: {
+            paths: {
+                configtx: string
+                cryptoconfig: string
+            }
+        }
         organizations: {
             paths: {
                 root: string
@@ -115,6 +120,12 @@ export default class Options {
                     bin: Path.join(blockchainRoot, 'bin'),
                     channels: Path.join(blockchainRoot, 'channels'),
                     chaincodes: Path.join(blockchainRoot, 'chaincodes')
+                },
+                configuration: {
+                    paths: {
+                        configtx: Path.join(blockchainRoot, 'configtx.yaml'),
+                        cryptoconfig: Path.join(blockchainRoot, 'crypto-config.yaml')
+                    }
                 },
                 organizations: {
                     paths: {

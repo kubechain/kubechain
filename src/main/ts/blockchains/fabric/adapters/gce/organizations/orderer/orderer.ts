@@ -113,9 +113,9 @@ export default class Orderer implements IOrderer, ICryptographicMaterialCollecto
     }
 
     mountCryptographicMaterialFromVolume(container: IContainer, mountPath: string) {
-        const peerSubPath = Path.posix.join('orderers', this.name());
-        const mount = this.volume.toVolumeMount(Path.posix.join(mountPath, peerSubPath));//TODO: peerSubPath?
-        mount.setSubPath(peerSubPath);
+        const ordererSubPath = Path.posix.join('orderers', this.name());
+        const mount = this.volume.toVolumeMount(Path.posix.join(mountPath, ordererSubPath));
+        mount.setSubPath(ordererSubPath);
         container.addVolumeMount(mount);
     }
 

@@ -9,9 +9,9 @@ export default class OrdererOrganization implements IOrganization {
     private organization: Organization;
     private path: string;
 
-    constructor(name: string, path: string) {
+    constructor(name: string, path: string, domain: string, mspId: string) {
         this.path = path;
-        this.organization = new Organization(name, path, 'orderer');
+        this.organization = new Organization(name, path, 'orderer', domain, mspId);
         this.addOrderers();
     }
 

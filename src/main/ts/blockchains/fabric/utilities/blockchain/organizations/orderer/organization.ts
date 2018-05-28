@@ -4,7 +4,6 @@ import IPodSpec from "../../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipo
 import IContainer from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
 import ResourceWriter from "../../resourcewriter/resourcewriter";
 import IVolume from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/ivolume";
-import Organization from "../organization";
 import OrganizationRepresentation from "../../representation/organizations/representation";
 import Options from "../../../../options";
 import {directoryToOpaqueSecret} from "../../../../../../kubernetes-sdk/utilities/1.8/configuration-storage/configuration/secret";
@@ -14,6 +13,7 @@ import ConfigMapTuple from "../../../kubernetes/configmaptuple";
 import ConfigMapTuples from "../../../kubernetes/configmaptuples";
 import * as path from "path";
 import {createDirectories} from "../../../../../../util";
+import Organization from "../organization";
 
 
 interface OutputPaths {
@@ -35,7 +35,7 @@ export default class OrdererOrganization implements IOrdererOrganization {
     constructor(options: Options, representation: OrganizationRepresentation) {
         this.options = options;
         this.representation = representation;
-        this.organization = new Organization(representation, options);
+        this.organization = new Organization(representation);
     }
 
     name(): string {
