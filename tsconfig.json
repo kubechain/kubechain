@@ -6,7 +6,9 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "./src/main/lib",
-    "allowJs": true
+    "allowJs": true,
+    "declaration": true,
+    "declarationDir": "./src/main/lib/typings/"
   },
   "include": [
     "./src/main/ts"

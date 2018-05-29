@@ -48,4 +48,11 @@ jspm_packages
 # Yarn Integrity file
 .yarn-integrity
 
+# CLI diretories/files
+blockchains
+configuration
+kubernetes
+kubechain.config.js
 
+# Jetbrains directory
+.idea
