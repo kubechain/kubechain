@@ -114,7 +114,6 @@ export default class Adapter implements IAdapter {
         this.workloads.forEach((workload) => {
             workload.workload.write(workload.path);
         });
-        // this.hooks.written({resources: this.resources, workloads: this.workloads});
     }
 
     //TODO: Duplication, remove.

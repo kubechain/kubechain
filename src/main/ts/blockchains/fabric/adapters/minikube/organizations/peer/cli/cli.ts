@@ -1,11 +1,11 @@
 import Options from "../../../../../options";
-import CommandLineInterfaceDeployment from "./deployment";
 import PeerOrganization from "../../peer";
 import ResourceWriter from "../../../../../utilities/blockchain/resourcewriter/resourcewriter";
 import IHasResources from "../../../../../utilities/blockchain/organizations/ihasresources";
 import ICommandLineInterface from "../../../../../utilities/blockchain/organizations/peer/entities/cli/icommandlineinterface";
 import IPodSpec from "../../../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import IContainer from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
+import CommandLineInterfaceDeployment from "../../../../../utilities/blockchain/organizations/peer/entities/cli/deployment";
 
 export default class CommandLineInterFace implements IHasResources, ICommandLineInterface {
     private options: Options;

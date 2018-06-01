@@ -94,12 +94,4 @@ export default class Kubechain {
     get(jsonPath: string) {
         return jsonpath.value(this.options, jsonPath)
     }
-
-    getAll(jsonPath: string) {
-        return jsonpath.query(this.options, jsonPath)
-    }
-
-    getOptions() {
-        return this.options;
-    }
 }

@@ -8,11 +8,10 @@ import OrganizationRepresentation from "../../utilities/blockchain/representatio
 import KubechainTargets from "../../../../kubechain/targets";
 import IHooks from "../../../utilities/iadapterhooks";
 import ResourceWriter from "../../utilities/blockchain/resourcewriter/resourcewriter";
-import {promptUserForDesiredContext} from "../../../utilities/cluster";
 import * as KubernetesClient from "kubernetes-client";
-import CrudResource from "../../../../kubernetes-sdk/utilities/resources/crud/crud-resource";
 import Service from "../../../../kubernetes-sdk/utilities/kinds/namespaced/service";
-import Pod from "../../../../kubernetes-sdk/utilities/kinds/namespaced/pod";
+import {promptUserForDesiredContext} from "../../../utilities/cluster";
+import CrudResource from "../../../../kubernetes-sdk/utilities/resources/crud/crud-resource";
 
 export default class Adapter implements IAdapter {
     private options: Options;

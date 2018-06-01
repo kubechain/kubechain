@@ -1,12 +1,8 @@
-import PeerDeployment from "./deployment";
-import PeerService from "./service";
 import Options from "../../../../../options";
 import OrganizationEntityRepresentation from "../../../../../utilities/blockchain/representation/organizations/entities/representation";
 import PeerOrganization from "../../peer";
 import IPodSpec from "../../../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import IContainer from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
-import ConfigMapTuples from "../../../../../utilities/kubernetes/configmaptuples";
-import ConfigMapTuple from "../../../../../utilities/kubernetes/configmaptuple";
 import * as Path from "path";
 import PersistentVolumeClaim from "../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/persistentvolumeclaim/persistentvolumeclaim";
 import ResourceRequirements from "../../../../../../../kubernetes-sdk/api/1.8/meta/resourcerequirements";
@@ -14,13 +10,21 @@ import IVolume from "../../../../../../../kubernetes-sdk/api/1.8/configuration-s
 import ResourceWriter from "../../../../../utilities/blockchain/resourcewriter/resourcewriter";
 import IPeer from "../../../../../utilities/blockchain/organizations/peer/entities/peer/ipeer";
 import IHasResources from "../../../../../utilities/blockchain/organizations/ihasresources";
+import {
+    peerMspPathInContainer, peerPathInContainer, peerPathOnHost,
+    peerTlsPathInContainer
+} from "../../../../../utilities/blockchain/cryptographic/paths";
+import {identifier} from "../../../../../utilities/blockchain/organizations/identifiers";
+import PeerDeployment from "../../../../../utilities/blockchain/organizations/peer/entities/peer/deployment";
+import PeerService from "../../../../../utilities/blockchain/organizations/peer/entities/peer/service";
+import FabricVolume from "../../../../../utilities/blockchain/volumes/volume";
 
 export default class Peer implements IHasResources, IPeer {
     private representation: any;
     private organization: PeerOrganization;
     private options: Options;
     private persistentVolumeClaim: PersistentVolumeClaim;
-    private volume: IVolume;
+    private volume: FabricVolume;
 
     constructor(representation: OrganizationEntityRepresentation, organization: PeerOrganization, options: Options) {
         this.representation = representation;
@@ -36,7 +40,7 @@ export default class Peer implements IHasResources, IPeer {
         const requirements = new ResourceRequirements();
         requirements.setRequests({"storage": "10Mi"});
         this.persistentVolumeClaim.setResourceRequirements(requirements);
-        this.volume = this.persistentVolumeClaim.toVolume();
+        this.volume = new FabricVolume(this.persistentVolumeClaim.toVolume());
     }
 
     private name(): string {
@@ -44,7 +48,7 @@ export default class Peer implements IHasResources, IPeer {
     }
 
     id(): string {
-        return this.name().split(".")[0]; // TODO: Change this.
+        return identifier(this.name());
     }
 
     coreId() {
@@ -71,10 +75,6 @@ export default class Peer implements IHasResources, IPeer {
         return this.organization.mspID();
     }
 
-    _portOffset() {
-        return parseInt((this.id().split("peer")[-1])) * 4;
-    }
-
     addResources(writer: ResourceWriter, outputPath: string) {
         const deployment = new PeerDeployment(this, this.options);
         const service = new PeerService(this.organization.name(), this.id());
@@ -85,18 +85,16 @@ export default class Peer implements IHasResources, IPeer {
     }
 
     addVolume(spec: IPodSpec) {
-        spec.addVolume(this.volume)
+        spec.addVolume(this.volume);
     }
 
     mountCryptographicMaterial(container: IContainer, mountPath: string) {
         this.organization.mountPeerCryptographicMaterial(this.name(), container, mountPath);
     }
 
-    mountCryptographicMaterialFromVolume(container: IContainer, mountPath: string) {
-        const peerSubPath = Path.posix.join('peers', this.name());
-        const mount = this.volume.toVolumeMount(Path.posix.join(mountPath, peerSubPath));
-        mount.setSubPath(peerSubPath);
-        container.addVolumeMount(mount);
+    mountCryptographicMaterialIntoVolume(container: IContainer, mountPath: string) {
+        const peerSubPath = peerPathInContainer(this.name());
+        this.volume.mount(container, Path.posix.join(mountPath, peerSubPath), peerSubPath);
     }
 
     addCryptographicMaterialAsVolumes(spec: IPodSpec) {
@@ -104,23 +102,11 @@ export default class Peer implements IHasResources, IPeer {
     }
 
     mountTls(container: IContainer, mountPath: string) {
-        const mount = this.volume.toVolumeMount(mountPath);
-        mount.setSubPath(this.tlsPath());
-        container.addVolumeMount(mount);
-    }
-
-    private tlsPath(): string {
-        return Path.posix.join('peers', this.name(), 'tls');
+        this.volume.mount(container, mountPath, peerTlsPathInContainer(this.name()));
     }
 
     mountMsp(container: IContainer, mountPath: string) {
-        const mount = this.volume.toVolumeMount(mountPath);
-        mount.setSubPath(this.mspPath());
-        container.addVolumeMount(mount);
-    }
-
-    private mspPath(): string {
-        return Path.posix.join('peers', this.name(), 'msp');
+        this.volume.mount(container, mountPath, peerMspPathInContainer(this.name()));
     }
 
     addKubeDnsIpToArray(array: string[]): void {

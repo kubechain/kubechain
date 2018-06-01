@@ -1,5 +1,3 @@
-import PeerDeployment from "./deployment";
-import PeerService from "./service";
 import Options from "../../../../../options";
 import OrganizationEntityRepresentation from "../../../../../utilities/blockchain/representation/organizations/entities/representation";
 import PeerOrganization from "../../peer";
@@ -8,7 +6,9 @@ import IHasResources from "../../../../../utilities/blockchain/organizations/iha
 import IPeer from "../../../../../utilities/blockchain/organizations/peer/entities/peer/ipeer";
 import IPodSpec from "../../../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import IContainer from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
-import * as Path from "path";
+import {identifier} from "../../../../../utilities/blockchain/organizations/identifiers";
+import PeerDeployment from "../../../../../utilities/blockchain/organizations/peer/entities/peer/deployment";
+import PeerService from "../../../../../utilities/blockchain/organizations/peer/entities/peer/service";
 
 export default class Peer implements IHasResources, IPeer {
     private representation: any;
@@ -34,7 +34,7 @@ export default class Peer implements IHasResources, IPeer {
     }
 
     id(): string {
-        return this.name().split(".")[0]; // TODO: Change this.
+        return identifier(this.name());
     }
 
     coreId() {
@@ -51,10 +51,6 @@ export default class Peer implements IHasResources, IPeer {
 
     gossipAddress() {
         return this.address();
-    }
-
-    _portOffset() {
-        return parseInt((this.id().split("peer")[-1])) * 4;
     }
 
     addResources(writer: ResourceWriter, outputPath: string) {
@@ -77,7 +73,7 @@ export default class Peer implements IHasResources, IPeer {
         this.organization.mountPeerCryptographicMaterial(this.name(), container, mountPath);
     }
 
-    mountCryptographicMaterialFromVolume(container: IContainer, mountPath: string): void {
+    mountCryptographicMaterialIntoVolume(container: IContainer, mountPath: string): void {
         this.organization.mountPeerCryptographicMaterialFromOrganizationVolume(this.name(), container, mountPath);
     }
 

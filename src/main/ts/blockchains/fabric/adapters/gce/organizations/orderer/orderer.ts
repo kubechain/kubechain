@@ -1,35 +1,41 @@
-import OrdererDeployment from "./deployment";
-import OrdererService from "./service";
 import Options from "../../../../options";
 import OrganizationEntityRepresentation from "../../../../utilities/blockchain/representation/organizations/entities/representation";
 import OrdererOrganization from "../orderer";
 import IPodSpec from "../../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import IContainer from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
 import * as Path from "path";
-import ConfigMapTuples from "../../../../utilities/kubernetes/configmaptuples";
-import ConfigMapTuple from "../../../../utilities/kubernetes/configmaptuple";
 import PersistentVolumeClaim from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/persistentvolumeclaim/persistentvolumeclaim";
 import ResourceRequirements from "../../../../../../kubernetes-sdk/api/1.8/meta/resourcerequirements";
-import IVolume from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/ivolume";
 import ResourceWriter from "../../../../utilities/blockchain/resourcewriter/resourcewriter";
 import IOrderer from "../../../../utilities/blockchain/organizations/orderer/entities/orderer/iorderer";
-import ICryptographicMaterialCollector from "../../../../utilities/blockchain/cryptographic/icryptographicmaterialcollector";
-import IGenesisBlockCollector from "../../../../utilities/blockchain/organizations/orderer/entities/igenesisblockcollector";
 import {toDNS1123} from "../../../../../../kubernetes-sdk/utilities/naming";
+import ConfigurationDirectoryTree from "../../../../utilities/kubernetes/files/configurationdirectorytree";
+import ConfigMap from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
+import {
+    genesisBlockDirectoryPathInContainer,
+    genesisBlockFilePathInContainer,
+    ordererMspPathInContainer, ordererPathInContainer, ordererPathOnHost,
+    ordererTlsPathInContainer
+} from "../../../../utilities/blockchain/cryptographic/paths";
+import {identifier} from "../../../../utilities/blockchain/organizations/identifiers";
+import OrdererDeployment from "../../../../utilities/blockchain/organizations/orderer/entities/orderer/deployment";
+import OrdererService from "../../../../utilities/blockchain/organizations/orderer/entities/orderer/service";
+import FabricVolume from "../../../../utilities/blockchain/volumes/volume";
+import ConfigurationDirectoryTreeVolumes from "../../../../utilities/blockchain/volumes/configurationdirectorytreevolumes";
 
-export default class Orderer implements IOrderer, ICryptographicMaterialCollector, IGenesisBlockCollector {
+export default class Orderer implements IOrderer {
     private representation: OrganizationEntityRepresentation;
     private organization: OrdererOrganization;
     private options: Options;
-    private crypographicMaterial: ConfigMapTuples;
     private persistentVolumeClaim: PersistentVolumeClaim;
-    private volume: IVolume;
+    private volume: FabricVolume;
+    private cryptographicMaterialVolumes: ConfigurationDirectoryTreeVolumes<ConfigMap>;
 
-    constructor(representation: OrganizationEntityRepresentation, organization: OrdererOrganization, options: Options, organizationConfiguration: ConfigMapTuples) {
+    constructor(representation: OrganizationEntityRepresentation, organization: OrdererOrganization, options: Options, cryptographicMaterial: ConfigurationDirectoryTree<ConfigMap>) {
         this.representation = representation;
         this.organization = organization;
         this.options = options;
-        this.crypographicMaterial = organizationConfiguration;
+        this.cryptographicMaterialVolumes = new ConfigurationDirectoryTreeVolumes(cryptographicMaterial);
 
         this.createVolume();
     }
@@ -41,39 +47,30 @@ export default class Orderer implements IOrderer, ICryptographicMaterialCollecto
         requirements.setRequests({"storage": "10Mi"});
         this.persistentVolumeClaim.setResourceRequirements(requirements);
 
-        this.volume = this.persistentVolumeClaim.toVolume();
+        this.volume = new FabricVolume(this.persistentVolumeClaim.toVolume());
     }
 
-    private name() {
+    private name(): string {
         return this.representation.name;
     }
 
-    organizationName() {
+    organizationName(): string {
         return this.organization.name();
     }
 
-    namespace() {
+    namespace(): string {
         return this.organization.namespace();
     }
 
-    id() {
-        return this.representation.name.split(".")[0]; //TODO: Change this.
+    id(): string {
+        return identifier(this.name());
     }
 
-    mspID() {
+    mspID(): string {
         return this.organization.mspID();
     }
 
-    exposedPort() {
-        const portStart = 32700;
-        return portStart + this.portOffset();
-    }
-
-    private portOffset() {
-        return parseInt(this.id().split("orderer")[1]); //TODO: Change this.
-    }
-
-    addResources(writer: ResourceWriter, outputPath: string) {
+    addResources(writer: ResourceWriter, outputPath: string): void {
         const deployment = new OrdererDeployment(this, this.options);
         const service = new OrdererService(this.id(), this.organization.name());
 
@@ -82,26 +79,16 @@ export default class Orderer implements IOrderer, ICryptographicMaterialCollecto
         writer.addResource({path: outputPath, name: this.name() + "-pvc", resource: this.persistentVolumeClaim});
     }
 
-    addVolume(spec: IPodSpec) {
+    addVolume(spec: IPodSpec): void {
         spec.addVolume(this.volume);
     }
 
-    mountCryptographicMaterial(container: IContainer, baseMountPath: string): void {
-        const relativePath = Path.join('orderers', this.name());
-        const tuples = this.crypographicMaterial.findSubPathTuplesForRelativePath(relativePath);
-
-        tuples.forEach((tuple: ConfigMapTuple) => {
-            tuple.addConfigMapAsRelativeVolumeMount(container, baseMountPath);
-        });
+    mountCryptographicMaterial(container: IContainer, mountPath: string): void {
+        this.cryptographicMaterialVolumes.findAndMount(ordererPathOnHost(this.name()), container, mountPath);
     }
 
     addCryptographicMaterialAsVolumes(spec: IPodSpec) {
-        const relativePath = Path.join('orderers', this.name());
-        const tuples = this.crypographicMaterial.findSubPathTuplesForRelativePath(relativePath);
-
-        tuples.forEach((tuple: ConfigMapTuple) => {
-            tuple.addAsVolume(spec)
-        });
+        this.cryptographicMaterialVolumes.findAndAddAsVolumes(ordererPathOnHost(this.name()), spec);
     }
 
     addGenesisBlockAsVolume(spec: IPodSpec) {
@@ -112,42 +99,24 @@ export default class Orderer implements IOrderer, ICryptographicMaterialCollecto
         this.organization.mountGenesisBlock(container, mountPath);
     }
 
-    mountCryptographicMaterialFromVolume(container: IContainer, mountPath: string) {
-        const ordererSubPath = Path.posix.join('orderers', this.name());
-        const mount = this.volume.toVolumeMount(Path.posix.join(mountPath, ordererSubPath));
-        mount.setSubPath(ordererSubPath);
-        container.addVolumeMount(mount);
+    mountCryptographicMaterialIntoVolume(container: IContainer, mountPath: string) {
+        const ordererSubPath = ordererPathInContainer(this.name());
+        this.volume.mount(container, Path.posix.join(mountPath, ordererSubPath), ordererSubPath);
     }
 
-    mountGenesisBlockDirectoryFromVolume(container: IContainer, mountPath: string) {
-        const genesisBlockVolumeMount = this.volume.toVolumeMount(mountPath);
-        genesisBlockVolumeMount.setSubPath(Path.posix.join('genesis'));
-        container.addVolumeMount(genesisBlockVolumeMount);
+    mountGenesisBlockDirectoryIntoVolume(container: IContainer, mountPath: string) {
+        this.volume.mount(container, mountPath, genesisBlockDirectoryPathInContainer());
     }
 
     mountGenesisBlockFileFromVolume(container: IContainer, mountPath: string): void {
-        const genesisBlockVolumeMount = this.volume.toVolumeMount(mountPath);
-        genesisBlockVolumeMount.setSubPath(Path.posix.join('genesis', 'genesis.block'));
-        container.addVolumeMount(genesisBlockVolumeMount);
+        this.volume.mount(container, mountPath, genesisBlockFilePathInContainer());
     }
 
     mountMsp(container: IContainer, mountPath: string) {
-        const volumeMount = this.volume.toVolumeMount(mountPath);
-        volumeMount.setSubPath(this.mspPathInContainer());
-        container.addVolumeMount(volumeMount);
-    }
-
-    private mspPathInContainer(): string {
-        return Path.posix.join('orderers', this.name(), 'msp');
+        this.volume.mount(container, mountPath, ordererMspPathInContainer(this.name()));
     }
 
     mountTls(container: IContainer, mountPath: string) {
-        const volumeMount = this.volume.toVolumeMount(mountPath);
-        volumeMount.setSubPath(this.tlsPathInContainer());
-        container.addVolumeMount(volumeMount);
-    }
-
-    private tlsPathInContainer(): string {
-        return Path.posix.join('orderers', this.name(), 'tls');
+        this.volume.mount(container, mountPath, ordererTlsPathInContainer(this.name()))
     }
 }

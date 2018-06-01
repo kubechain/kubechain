@@ -1,21 +1,20 @@
 import * as Path from 'path';
-import Deployment from "../../../../../../../kubernetes-sdk/api/1.8/workloads/deployment/deployment";
-import Options from "../../../../../options";
-import Container from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
-import EnvVar from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
-import ContainerPort from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
-import CertificateAuthorityRepresentation from "../../../../../utilities/blockchain/representation/certificateauthorities/ca/representation";
-import CertificateAuthority from "./ca";
-import IResource from "../../../../../../../kubernetes-sdk/api/1.8/iresource";
+import IResource from "../../../../../../../../kubernetes-sdk/api/1.8/iresource";
+import ICertificateAuthority from "./icertificateauthority";
+import CertificateAuthorityRepresentation from "../../../../representation/certificateauthorities/ca/representation";
+import Options from "../../../../../../options";
+import Deployment from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/deployment/deployment";
+import Container from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
+import EnvVar from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
+import ContainerPort from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
 
-//TODO: Fix duplicate class
 export default class CertificateAuthorityDeployment implements IResource {
-    private certificateAuthority: CertificateAuthority;
+    private certificateAuthority: ICertificateAuthority;
     private representation: CertificateAuthorityRepresentation;
     private options: Options;
     private deployment: Deployment;
 
-    constructor(certificateAuthority: CertificateAuthority, representation: CertificateAuthorityRepresentation, options: Options) {
+    constructor(certificateAuthority: ICertificateAuthority, representation: CertificateAuthorityRepresentation, options: Options) {
         this.certificateAuthority = certificateAuthority;
         this.representation = representation;
         this.options = options;

@@ -1,5 +1,3 @@
-import CertificateAuthorityService from './service';
-import CertificateAuthorityDeployment from './deployment';
 import Options from "../../../../../options";
 import PeerOrganization from "../../peer";
 import CertificateAuthorityRepresentation from "../../../../../utilities/blockchain/representation/certificateauthorities/ca/representation";
@@ -8,6 +6,8 @@ import IHasResources from "../../../../../utilities/blockchain/organizations/iha
 import ICertificateAuthority from "../../../../../utilities/blockchain/organizations/peer/entities/ca/icertificateauthority";
 import IContainer from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
 import IPodSpec from "../../../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
+import CertificateAuthorityDeployment from "../../../../../utilities/blockchain/organizations/peer/entities/ca/deployment";
+import CertificateAuthorityService from "../../../../../utilities/blockchain/organizations/peer/entities/ca/service";
 
 export default class CertificateAuthority implements IHasResources, ICertificateAuthority {
     private organization: PeerOrganization;

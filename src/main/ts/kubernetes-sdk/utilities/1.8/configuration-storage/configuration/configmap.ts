@@ -1,30 +1,12 @@
 import * as fs from 'fs-extra';
 import * as Path from 'path';
-import * as uuidv5 from 'uuid/v5'
 import ConfigMap from '../../../../api/1.8/configuration-storage/configuration/configmap/configmap';
 import * as Util from "../../../../../util";
 import KeyToPath from '../../../../api/1.8/configuration-storage/storage/volumes/volumesources/keytopath';
 import * as Naming from '../../../naming';
-import ConfigMapTuples from "../../../../../blockchains/fabric/utilities/kubernetes/configmaptuples";
-import ConfigMapTuple from "../../../../../blockchains/fabric/utilities/kubernetes/configmaptuple";
 import IConfigurationResource from "../../../../api/1.8/configuration-storage/configuration/iconfigurationresource";
-import OpaqueSecret from "../../../../api/1.8/configuration-storage/configuration/secret/opaquesecret";
-
-function directoryTreeToConfigMaps(rootPath: string, namespace: string): any {
-    const configMaps: any = {};
-    Util.parseDirectoryTree(rootPath, rootPath, (nodePath: string) => {
-        const nodePathRelativeToRootPath = Path.relative(rootPath, nodePath) || Path.basename(rootPath);
-        const name = nodePathRelativeToRootPath.replace(new RegExp('\\' + Path.sep, 'g'), '-');
-        const configMap = directoryToConfigMap(nodePath, uuidv5(name, namespace), namespace);
-        if (configMap) {
-            configMaps[nodePathRelativeToRootPath] = configMap;
-        }
-    });
-    return configMaps;
-}
 
 //TODO: Handle directories with no files in them.
-
 function directoryToConfigMap(path: string, name: string, namespace: string): ConfigMap {
     let configMap = new ConfigMap(name, namespace);
     const files = Util.findFilesInDirectory(path);
@@ -48,4 +30,4 @@ function fileToDataPair(configMap: IConfigurationResource, path: string) {
     configMap.addItem(new KeyToPath(key, fileName));
 }
 
-export {directoryToConfigMap, directoryTreeToConfigMaps}
+export {directoryToConfigMap}

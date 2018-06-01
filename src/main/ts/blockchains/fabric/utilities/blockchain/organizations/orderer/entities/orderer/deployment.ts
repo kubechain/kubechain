@@ -1,21 +1,21 @@
 import * as  Path from 'path';
-import Orderer from "./orderer";
-import Options from "../../../../options";
-import Deployment from "../../../../../../kubernetes-sdk/api/1.8/workloads/deployment/deployment";
-import Container from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
-import EnvVar from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
-import ContainerPort from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
-import IHooks from "../../../../../utilities/iadapterhooks";
+import Options from "../../../../../../options";
+import IOrderer from "./iorderer";
+import IHooks from "../../../../../../../utilities/iadapterhooks";
+import Deployment from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/deployment/deployment";
+import Container from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
+import ContainerPort from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
+import EnvVar from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
 
 export default class OrdererDeployment {
     private options: Options;
-    private orderer: Orderer;
+    private orderer: IOrderer;
     private name: string;
     private localMSPID: string;
     private deployment: Deployment;
     private hooks: IHooks;
 
-    constructor(orderer: Orderer, options: Options) {
+    constructor(orderer: IOrderer, options: Options) {
         this.orderer = orderer;
         this.options = options;
         this.hooks = options.get('$.hooks');
@@ -27,7 +27,7 @@ export default class OrdererDeployment {
 
     private createWorkload() {
         this.hooks.workload.beforeCreate({});
-        this.deployment = new Deployment(this.name, this.orderer.organizationName());
+        this.deployment = new Deployment(this.name, this.orderer.namespace());
         this.deployment.addMatchLabel("app", "hyperledger");
         this.deployment.addMatchLabel("role", "orderer");
         this.deployment.addMatchLabel("org", this.orderer.organizationName());
@@ -52,8 +52,8 @@ export default class OrdererDeployment {
         this.orderer.mountGenesisBlock(funnelContainer, funnelFromMountPath);
 
         const funnelToMountPath = Path.posix.join(this.funnelBaseMountPath(), 'to');
-        this.orderer.mountGenesisBlockDirectoryFromVolume(funnelContainer, Path.posix.join(funnelToMountPath, 'genesis'));
-        this.orderer.mountCryptographicMaterialFromVolume(funnelContainer, funnelToMountPath);
+        this.orderer.mountGenesisBlockDirectoryIntoVolume(funnelContainer, Path.posix.join(funnelToMountPath, 'genesis'));
+        this.orderer.mountCryptographicMaterialIntoVolume(funnelContainer, funnelToMountPath);
         this.deployment.addInitContainer(funnelContainer);
     }
 

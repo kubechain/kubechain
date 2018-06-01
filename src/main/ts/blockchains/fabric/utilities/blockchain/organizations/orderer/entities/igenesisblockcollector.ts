@@ -6,7 +6,7 @@ export default interface IGenesisBlockCollector {
 
     mountGenesisBlock(container: IContainer, mountPath: string): void;
 
-    mountGenesisBlockDirectoryFromVolume(container: IContainer, mountPath: string): void;
+    mountGenesisBlockDirectoryIntoVolume(container: IContainer, mountPath: string): void;
 
     mountGenesisBlockFileFromVolume(container: IContainer, mountPath: string): void;
 }

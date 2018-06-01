@@ -14,9 +14,9 @@ import {promptUserForDesiredContext} from "../../../utilities/cluster";
 import CrudResource from "../../../../kubernetes-sdk/utilities/resources/crud/crud-resource";
 
 export default class Adapter implements IAdapter {
-    private hooks: IHooks;
     private options: Options;
     private creator: RepresentationCreator;
+    private hooks: IHooks;
     private writer: ResourceWriter;
     private client: KubernetesClient.Client;
 

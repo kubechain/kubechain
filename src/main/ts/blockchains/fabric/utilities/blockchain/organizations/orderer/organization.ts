@@ -8,12 +8,13 @@ import OrganizationRepresentation from "../../representation/organizations/repre
 import Options from "../../../../options";
 import {directoryToOpaqueSecret} from "../../../../../../kubernetes-sdk/utilities/1.8/configuration-storage/configuration/secret";
 import OpaqueSecret from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/secret/opaquesecret";
-import {directoryTreeToConfigMapTuples} from "../../../kubernetes/configmap";
-import ConfigMapTuple from "../../../kubernetes/configmaptuple";
-import ConfigMapTuples from "../../../kubernetes/configmaptuples";
 import * as path from "path";
 import {createDirectories} from "../../../../../../util";
 import Organization from "../organization";
+import {directoryTreeToConfigMapDirectoryTree} from "../../../kubernetes/files/files";
+import ConfigurationCollector from "../../configurationcollector";
+import ConfigMap from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
+import ConfigurationDirectoryTree from "../../../kubernetes/files/configurationdirectorytree";
 
 
 interface OutputPaths {
@@ -23,12 +24,12 @@ interface OutputPaths {
 }
 
 export default class OrdererOrganization implements IOrdererOrganization {
-    private genesisBlockSecret: OpaqueSecret; //TODO: Create ISecret interface.
+    private genesisBlockSecret: OpaqueSecret;
     private _volume: IVolume;
     private organization: Organization;
     private writer: ResourceWriter;
     private outputPaths: OutputPaths;
-    private cryptographicMaterial: ConfigMapTuples;
+    private cryptographicMaterial: ConfigurationDirectoryTree<ConfigMap>;
     private representation: OrganizationRepresentation;
     private options: Options;
 
@@ -95,18 +96,11 @@ export default class OrdererOrganization implements IOrdererOrganization {
     }
 
     private createCryptographicMaterial(): void {
-        this.cryptographicMaterial = directoryTreeToConfigMapTuples(this.representation.path, this.namespace());
-        const tuples = this.cryptographicMaterial.findForAbsolutePath(this.representation.path);
-        tuples.forEach((tuple: ConfigMapTuple) => {
-            const configMap = tuple.getConfigMap();
-            const json = configMap.toJson();
-            const name = json.metadata.name; //TODO: Change this. Ok for now.
-            this.writer.addResource({
-                path: this.outputPaths.configmaps,
-                name: name,
-                resource: configMap
-            });
-        })
+        this.cryptographicMaterial = directoryTreeToConfigMapDirectoryTree(this.representation.path, this.namespace());
+        const directories = this.cryptographicMaterial.findDirectoriesForAbsolutePath(this.representation.path);
+
+        const cryptographicMaterialCollector = new ConfigurationCollector(directories);
+        cryptographicMaterialCollector.addToWriter(this.writer, this.outputPaths.configmaps);
     }
 
     addGenesisBlockAsVolume(spec: IPodSpec) {
@@ -118,7 +112,7 @@ export default class OrdererOrganization implements IOrdererOrganization {
         container.addVolumeMount(this.genesisBlockSecret.toVolume().toVolumeMount(Path.posix.join(mountPath, 'genesis')));
     }
 
-    mountGenesisBlockDirectoryFromVolume(container: IContainer, mountPath: string) {
+    mountGenesisBlockDirectoryIntoVolume(container: IContainer, mountPath: string) {
         const genesisBlockVolumeMount = this._volume.toVolumeMount(mountPath);
         genesisBlockVolumeMount.setSubPath(Path.posix.join('genesis'));
         container.addVolumeMount(genesisBlockVolumeMount);

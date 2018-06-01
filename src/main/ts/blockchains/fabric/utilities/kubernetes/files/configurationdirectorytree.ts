@@ -10,8 +10,8 @@ export default class ConfigurationDirectoryTree<T extends IVolumeSource> {
         this.directories = [];
     }
 
-    add(configMapTuple: ConfigurationDirectory<T>) {
-        this.directories.push(configMapTuple);
+    add(directory: ConfigurationDirectory<T>) {
+        this.directories.push(directory);
     }
 
     findDirectoriesForRelativePath(path: string): ConfigurationDirectory<T>[] {

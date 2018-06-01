@@ -1,23 +1,19 @@
 import * as path from 'path';
 import UtilOrdererOrganization from '../../../utilities/blockchain/organizations/orderer/organization';
 import Options from "../../../options";
-import PersistentVolumeClaim from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/persistentvolumeclaim/persistentvolumeclaim";
-import ResourceRequirements from "../../../../../kubernetes-sdk/api/1.8/meta/resourcerequirements";
-import OpaqueSecret from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/secret/opaquesecret";
 import Namespace from "../../../../../kubernetes-sdk/api/1.8/cluster/namespace";
 import Orderer from "./orderer/orderer";
 import OrganizationRepresentation from "../../../utilities/blockchain/representation/organizations/representation";
 import OrganizationEntityRepresentation from "../../../utilities/blockchain/representation/organizations/entities/representation";
-import IVolume from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/ivolume";
 import IContainer from "../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
 import IPodSpec from "../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
-import ConfigMapTuples from "../../../utilities/kubernetes/configmaptuples";
-import ConfigMapTuple from "../../../utilities/kubernetes/configmaptuple";
 import {createDirectories} from "../../../../../util";
-import {directoryTreeToConfigMapTuples} from "../../../utilities/kubernetes/configmap";
-import {directoryToOpaqueSecret} from "../../../../../kubernetes-sdk/utilities/1.8/configuration-storage/configuration/secret";
 import ResourceWriter from "../../../utilities/blockchain/resourcewriter/resourcewriter";
 import IOrdererOrganization from "../../../utilities/blockchain/organizations/orderer/irordererorganization";
+import {directoryTreeToConfigMapDirectoryTree} from "../../../utilities/kubernetes/files/files";
+import ConfigurationDirectoryTree from "../../../utilities/kubernetes/files/configurationdirectorytree";
+import ConfigMap from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
+import ConfigurationCollector from "../../../utilities/blockchain/configurationcollector";
 
 export default class OrdererOrganization implements IOrdererOrganization {
     private options: Options;
@@ -26,7 +22,7 @@ export default class OrdererOrganization implements IOrdererOrganization {
     private outputPaths: { root: string, orderers: string, configmaps: string };
     private _namespace: Namespace;
     private ordererOrganization: UtilOrdererOrganization;
-    private cryptographicMaterial: ConfigMapTuples;
+    private cryptographicMaterial: ConfigurationDirectoryTree<ConfigMap>;
     private writer: ResourceWriter;
 
     constructor(options: Options, representation: OrganizationRepresentation) {
@@ -84,18 +80,11 @@ export default class OrdererOrganization implements IOrdererOrganization {
     }
 
     private createCryptographicMaterial(): void {
-        this.cryptographicMaterial = directoryTreeToConfigMapTuples(this.representation.path, this.namespace());
-        const tuples = this.cryptographicMaterial.findForAbsolutePath(this.representation.path);
-        tuples.forEach((tuple: ConfigMapTuple) => {
-            const configMap = tuple.getConfigMap();
-            const json = configMap.toJson();
-            const name = json.metadata.name; //TODO: Change this. Ok for now.
-            this.writer.addResource({
-                path: this.outputPaths.configmaps,
-                name: name,
-                resource: configMap
-            });
-        })
+        this.cryptographicMaterial = directoryTreeToConfigMapDirectoryTree(this.representation.path, this.namespace());
+        const directories = this.cryptographicMaterial.findDirectoriesForAbsolutePath(this.representation.path);
+
+        const cryptographicMaterialCollector = new ConfigurationCollector(directories);
+        cryptographicMaterialCollector.addToWriter(this.writer, this.outputPaths.configmaps);
     }
 
     private createNamespace(): void {
@@ -127,7 +116,7 @@ export default class OrdererOrganization implements IOrdererOrganization {
         this.ordererOrganization.addGenesisBlockAsVolume(spec)
     }
 
-    mountGenesisBlockDirectoryFromVolume(container: IContainer, mountPath: string) {
+    mountGenesisBlockDirectoryIntoVolume(container: IContainer, mountPath: string) {
     }
 
     mountGenesisBlockFileFromVolume(container: IContainer, mountPath: string): void {

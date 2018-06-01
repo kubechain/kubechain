@@ -1,7 +1,5 @@
-import * as Path from 'path';
-import IOrganization from "./iorganization";
+import * as Path from "path";
 import Options from "../../../options";
-import Organization from "./organization";
 import Namespace from "../../../../../kubernetes-sdk/api/1.8/cluster/namespace";
 import CertificateAuthority from "./peer/ca/ca";
 import CommandLineInterFace from "./peer/cli/cli";
@@ -11,18 +9,21 @@ import OrganizationEntityRepresentation from "../../../utilities/blockchain/repr
 import {createDirectories} from "../../../../../util";
 import ResourceWriter from "../../../utilities/blockchain/resourcewriter/resourcewriter";
 import {directoryTreeToConfigMapDirectoryTree} from "../../../utilities/kubernetes/files/files";
-import ConfigurationCollector from "../../../utilities/blockchain/configurationcollector";
-import IChainCode from "../../../utilities/blockchain/chaincode/options";
+import ChainCodeOptions from "../../../utilities/blockchain/chaincode/options";
 import Channel from "../../../utilities/blockchain/channel/channel";
 import ChannelOptions from "../../../utilities/blockchain/channel/options";
 import ChainCode from "../../../utilities/blockchain/chaincode/chaincode";
 import ConfigMap from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
-import ConfigurationDirectoryTree from "../../../utilities/kubernetes/files/configurationdirectorytree";
 import IContainer from "../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
 import IPodSpec from "../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import IChainCodeCollector from "../../../utilities/blockchain/chaincode/ichainccodecollector";
 import IChannelCollector from "../../../utilities/blockchain/channel/ichannelcollector";
-import ConfigurationDirectory from "../../../utilities/kubernetes/files/configurationdirectory";
+import {
+    caPathOnHost, peerAdminMspPathOnHost, peerPathOnHost
+} from "../../../utilities/blockchain/cryptographic/paths";
+import Organization from "../../../utilities/blockchain/organizations/organization";
+import IOrganization from "../../../utilities/blockchain/organizations/iorganization";
+import ConfigurationDirectoryTreeVolumes from "../../../utilities/blockchain/volumes/configurationdirectorytreevolumes";
 
 interface OutputPaths {
     channels: string;
@@ -38,7 +39,7 @@ export default class PeerOrganization implements IOrganization, IChainCodeCollec
     private configPath: string;
     private outputPaths: OutputPaths;
     private organization: Organization;
-    private cryptographicMaterial: ConfigurationDirectoryTree<ConfigMap>;
+    private cryptographicMaterialVolumes: ConfigurationDirectoryTreeVolumes<ConfigMap>;
     private writer: ResourceWriter;
     private kubeDnsClusterIp: string;
     private chainCodes: ChainCode[];
@@ -46,7 +47,7 @@ export default class PeerOrganization implements IOrganization, IChainCodeCollec
 
     constructor(options: Options, representation: OrganizationRepresentation, kubeDnsClusterIp: string) {
         this.kubeDnsClusterIp = kubeDnsClusterIp;
-        this.organization = new Organization(representation, options);
+        this.organization = new Organization(representation);
         this.options = options;
         this.representation = representation;
         this.configPath = representation.path;
@@ -102,16 +103,14 @@ export default class PeerOrganization implements IOrganization, IChainCodeCollec
     }
 
     private createCryptoMaterial() {
-        this.cryptographicMaterial = directoryTreeToConfigMapDirectoryTree(this.representation.path, this.namespace());
-        const configurationDirectories = this.cryptographicMaterial.findDirectoriesForAbsolutePath(this.representation.path);
-
-        const cryptographicMaterialCollector = new ConfigurationCollector(configurationDirectories);
-        cryptographicMaterialCollector.addToWriter(this.writer, this.outputPaths.configmaps);
+        const cryptographicMaterial = directoryTreeToConfigMapDirectoryTree(this.representation.path, this.namespace());
+        this.cryptographicMaterialVolumes = new ConfigurationDirectoryTreeVolumes(cryptographicMaterial);
+        this.cryptographicMaterialVolumes.findAndAddToWriter(this.representation.path, this.writer, this.outputPaths.configmaps)
     }
 
     private createChainCodes() {
         const chaincodes = this.options.get('$.options.chaincodes');
-        chaincodes.forEach((chainCodeOptions: IChainCode) => {
+        chaincodes.forEach((chainCodeOptions: ChainCodeOptions) => {
             chainCodeOptions.path = chainCodeOptions.path || Path.join(this.options.get('$.blockchain.paths.chaincodes'), chainCodeOptions.id);
             const chainCode = new ChainCode(chainCodeOptions, this.namespace());
             chainCode.addToWriter(this.writer, Path.join(this.outputPaths.chaincodes, chainCodeOptions.id));
@@ -130,9 +129,12 @@ export default class PeerOrganization implements IOrganization, IChainCodeCollec
     }
 
     private createNamespace() {
-        const outputPath = this.outputPaths.root;
         const namespace = new Namespace(this.name());
-        this.writer.addResource({path: outputPath, name: this.name() + '-namespace', resource: namespace});
+        this.writer.addResource({
+            path: this.outputPaths.root,
+            name: this.name() + '-namespace',
+            resource: namespace
+        });
     }
 
     private createCli() {
@@ -162,63 +164,27 @@ export default class PeerOrganization implements IOrganization, IChainCodeCollec
     }
 
     mountCertificateAuthorityCryptographicMaterial(container: IContainer, mountPath: string) {
-        const directories = this.cryptographicMaterial.findDirectoriesForRelativePath(this.caPathOnHost());
-        directories.forEach((directory: ConfigurationDirectory<ConfigMap>) => {
-            directory.mount(container, mountPath);
-        });
+        this.cryptographicMaterialVolumes.findAndMount(caPathOnHost(), container, mountPath);
     }
 
     addCertificateAuthorityCryptographicMaterialAsVolumes(spec: IPodSpec) {
-        const directories = this.cryptographicMaterial.findDirectoriesForRelativePath(this.caPathOnHost());
-        directories.forEach((directory: ConfigurationDirectory<ConfigMap>) => {
-            directory.addAsVolume(spec);
-        });
+        this.cryptographicMaterialVolumes.findAndAddAsVolumes(caPathOnHost(), spec);
     }
 
-    private caPathOnHost() {
-        return 'ca';
+    mountPeerAdminCryptographicMaterial(container: IContainer, mountPath: string) {
+        this.cryptographicMaterialVolumes.findAndMount(peerAdminMspPathOnHost(this.organization.name()), container, mountPath);
     }
 
-    adminMspMountPath() {
-        return Path.posix.join('users', `Admin@${this.organization.name()}`, 'msp');
-    }
-
-    adminHostPath(): string {
-        return Path.join('users', `Admin@${this.organization.name()}`, 'msp');
-    }
-
-    mountPeerAdminCryptographicMaterial(container: IContainer, baseMountPath: string) {
-        const directories = this.cryptographicMaterial.findSubDirectoriesForRelativePath(this.peerAdminPathOnHost()) || [];
-        directories.forEach((directory: ConfigurationDirectory<ConfigMap>) => {
-            directory.mountWithRelativePath(container, baseMountPath);
-        });
-    }
-
-    addPeerAdminConfigurationAsVolumes(deployment: IPodSpec) {
-        const directories = this.cryptographicMaterial.findSubDirectoriesForRelativePath(this.peerAdminPathOnHost());
-        directories.forEach((directory: ConfigurationDirectory<ConfigMap>) => {
-            directory.addAsVolume(deployment);
-        });
-    }
-
-    private peerAdminPathOnHost(): string {
-        return Path.join('users', `Admin@${this.organization.name()}`, 'msp');
+    addPeerAdminConfigurationAsVolumes(spec: IPodSpec) {
+        this.cryptographicMaterialVolumes.findAndAddAsVolumes(peerAdminMspPathOnHost(this.organization.name()), spec);
     }
 
     mountPeerCryptographicMaterial(peerName: string, container: IContainer, mountPath: string) {
-        const relativePath = Path.join('peers', peerName);
-        const directories = this.cryptographicMaterial.findSubDirectoriesForRelativePath(relativePath);
-        directories.forEach((directory: ConfigurationDirectory<ConfigMap>) => {
-            directory.mountWithRelativePath(container, mountPath);
-        })
+        this.cryptographicMaterialVolumes.findAndMount(peerPathOnHost(peerName), container, mountPath);
     }
 
     addPeerCryptographicMaterialAsVolumes(peerName: string, spec: IPodSpec) {
-        const relativepath = Path.join('peers', peerName);
-        const directories = this.cryptographicMaterial.findSubDirectoriesForRelativePath(relativepath);
-        directories.forEach((directory: ConfigurationDirectory<ConfigMap>) => {
-            directory.addAsVolume(spec);
-        });
+        this.cryptographicMaterialVolumes.findAndAddAsVolumes(peerPathOnHost(peerName), spec);
     }
 
     mountChainCodes(container: IContainer, mountPath: string): void {
@@ -244,5 +210,4 @@ export default class PeerOrganization implements IOrganization, IChainCodeCollec
             channel.addAsVolume(spec);
         })
     }
-
 }

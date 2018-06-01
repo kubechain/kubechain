@@ -1,16 +1,15 @@
 import * as Path from 'path';
-import Peer from "./peer";
-import Deployment from "../../../../../../../kubernetes-sdk/api/1.8/workloads/deployment/deployment";
-import Container from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
-import Options from "../../../../../options";
-import ContainerPort from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
-import EnvVar from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
-import DirectoryOrCreateHostPathVolume from "../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/hostpath/directoryorcreate";
-import IResource from "../../../../../../../kubernetes-sdk/api/1.8/iresource";
+import IPeer from "./ipeer";
+import IResource from "../../../../../../../../kubernetes-sdk/api/1.8/iresource";
+import DirectoryOrCreateHostPathVolume from "../../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/hostpath/directoryorcreate";
+import Deployment from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/deployment/deployment";
+import Options from "../../../../../../options";
+import Container from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
+import ContainerPort from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
+import EnvVar from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
 
-//TODO: Fix duplicate class.
 export default class PeerDeployment implements IResource {
-    private peer: Peer;
+    private peer: IPeer;
     private namespace: string;
     private deploymentName: string;
     private runHostPathVolume: DirectoryOrCreateHostPathVolume;
@@ -19,7 +18,7 @@ export default class PeerDeployment implements IResource {
     private dns: string[];
     private dnsSearch: string[];
 
-    constructor(peer: Peer, options: Options) {
+    constructor(peer: IPeer, options: Options) {
         this.peer = peer;
         this.namespace = peer.namespace();
         this.options = options;
@@ -52,7 +51,7 @@ export default class PeerDeployment implements IResource {
         this.peer.mountCryptographicMaterial(funnelContainer, funnelFromMountPath);
 
         const funnelToMountPath = Path.posix.join(PeerDeployment.funnelBaseMountPath(), 'to');
-        this.peer.mountCryptographicMaterialFromVolume(funnelContainer, funnelToMountPath);
+        this.peer.mountCryptographicMaterialIntoVolume(funnelContainer, funnelToMountPath);
         this.deployment.addInitContainer(funnelContainer);
     }
 

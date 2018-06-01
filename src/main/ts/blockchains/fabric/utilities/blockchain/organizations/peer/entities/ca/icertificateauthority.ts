@@ -6,4 +6,9 @@ export default interface ICertificateAuthority extends ICryptographicMaterialCol
     mountCryptographicMaterialFromVolume(container: IContainer, mountPath: string): void;
 
     addVolumeToPodSpec(podSpec: IPodSpec): void;
+
+    //TODO: Fix below functions they violate 'tell don't ask'
+    namespace(): string;
+
+    organizationName(): string;
 }

@@ -1,21 +1,19 @@
 import * as Path from 'path';
-import Options from "../../../../../options";
-import Deployment from "../../../../../../../kubernetes-sdk/api/1.8/workloads/deployment/deployment";
-import IVolume from "../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/ivolume";
-import Container from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
-import EnvVar from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
-import DirectoryOrCreateHostPathVolume from "../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/hostpath/directoryorcreate";
-import CommandLineInterFace from "./cli";
-import IResource from "../../../../../../../kubernetes-sdk/api/1.8/iresource";
-
+import IResource from "../../../../../../../../kubernetes-sdk/api/1.8/iresource";
+import ICommandLineInterface from "./icommandlineinterface";
+import Options from "../../../../../../options";
+import Deployment from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/deployment/deployment";
+import Container from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
+import EnvVar from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
+import DirectoryOrCreateHostPathVolume from "../../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/hostpath/directoryorcreate";
 
 export default class CommandLineInterfaceDeployment implements IResource {
-    private commandLineInterface: CommandLineInterFace;
+    private commandLineInterface: ICommandLineInterface;
     private name: string;
     private options: Options;
     private deployment: Deployment;
 
-    constructor(commandLineInterFace: CommandLineInterFace, options: Options) {
+    constructor(commandLineInterFace: ICommandLineInterface, options: Options) {
         this.commandLineInterface = commandLineInterFace;
         this.options = options;
         this.name = "cli";

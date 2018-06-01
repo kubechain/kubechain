@@ -1,31 +1,34 @@
-import OrdererDeployment from "./deployment";
-import OrdererService from "./service";
 import Options from "../../../../options";
 import OrganizationEntityRepresentation from "../../../../utilities/blockchain/representation/organizations/entities/representation";
 import OrdererOrganization from "../orderer";
 import ResourceWriter from "../../../../utilities/blockchain/resourcewriter/resourcewriter";
 import IPodSpec from "../../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import IContainer from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
-import ConfigMapTuple from "../../../../utilities/kubernetes/configmaptuple";
-import * as Path from "path";
-import ConfigMapTuples from "../../../../utilities/kubernetes/configmaptuples";
 import IOrderer from "../../../../utilities/blockchain/organizations/orderer/entities/orderer/iorderer";
-import ICryptographicMaterialCollector from "../../../../utilities/blockchain/cryptographic/icryptographicmaterialcollector";
+import ConfigurationDirectoryTree from "../../../../utilities/kubernetes/files/configurationdirectorytree";
+import ConfigMap from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
+import {
+    ordererPathInContainer, ordererPathOnHost,
+} from "../../../../utilities/blockchain/cryptographic/paths";
+import {identifier} from "../../../../utilities/blockchain/organizations/identifiers";
+import OrdererDeployment from "../../../../utilities/blockchain/organizations/orderer/entities/orderer/deployment";
+import OrdererService from "../../../../utilities/blockchain/organizations/orderer/entities/orderer/service";
+import ConfigurationDirectoryTreeVolumes from "../../../../utilities/blockchain/volumes/configurationdirectorytreevolumes";
 
-export default class Orderer implements IOrderer, ICryptographicMaterialCollector {
+export default class Orderer implements IOrderer {
     private representation: OrganizationEntityRepresentation;
     private organization: OrdererOrganization;
     private options: Options;
-    private cryptographicMaterial: ConfigMapTuples;
+    private cryptographicMaterialVolumes: ConfigurationDirectoryTreeVolumes<ConfigMap>;
 
-    constructor(representation: OrganizationEntityRepresentation, organization: OrdererOrganization, options: Options, organizationConfiguration: ConfigMapTuples) {
+    constructor(representation: OrganizationEntityRepresentation, organization: OrdererOrganization, options: Options, cryptographicMaterial: ConfigurationDirectoryTree<ConfigMap>) {
         this.representation = representation;
         this.organization = organization;
         this.options = options;
-        this.cryptographicMaterial = organizationConfiguration;
+        this.cryptographicMaterialVolumes = new ConfigurationDirectoryTreeVolumes(cryptographicMaterial);
     }
 
-    private name() {
+    private name(): string {
         return this.representation.name;
     }
 
@@ -33,29 +36,19 @@ export default class Orderer implements IOrderer, ICryptographicMaterialCollecto
         return this.organization.name();
     }
 
-    namespace() {
+    namespace(): string {
         return this.organization.namespace();
     }
 
-    id() {
-        return this.representation.name.split(".")[0]; //TODO: Change this.
+    id(): string {
+        return identifier(this.name());
     }
 
     mspID(): string {
         return this.organization.mspID();
     }
 
-
-    exposedPort() {
-        const portStart = 32700;
-        return portStart + this.portOffset();
-    }
-
-    private portOffset() {
-        return parseInt(this.id().split("orderer")[1]); //TODO: Change this.
-    }
-
-    addResources(writer: ResourceWriter, outputPath: string) {
+    addResources(writer: ResourceWriter, outputPath: string): void {
         const deployment = new OrdererDeployment(this, this.options);
         const service = new OrdererService(this.id(), this.organization.name());
 
@@ -67,28 +60,16 @@ export default class Orderer implements IOrderer, ICryptographicMaterialCollecto
         this.organization.addOrganizationVolumeToPodSpec(spec);
     }
 
-    mountCryptographicMaterial(container: IContainer, baseMountPath: string): void {
-        const tuples = this.cryptographicMaterial.findSubPathTuplesForRelativePath(this.ordererPathOnHost());
-
-        tuples.forEach((tuple: ConfigMapTuple) => {
-            tuple.addConfigMapAsRelativeVolumeMount(container, baseMountPath);
-        });
+    mountCryptographicMaterial(container: IContainer, mountPath: string): void {
+        this.cryptographicMaterialVolumes.findAndMount(ordererPathOnHost(this.name()), container, mountPath);
     }
 
-    addCryptographicMaterialAsVolumes(spec: IPodSpec): void {
-        const tuples = this.cryptographicMaterial.findSubPathTuplesForRelativePath(this.ordererPathOnHost());
-        tuples.forEach((tuple: ConfigMapTuple) => {
-            tuple.addAsVolume(spec)
-        });
+    addCryptographicMaterialAsVolumes(spec: IPodSpec) {
+        this.cryptographicMaterialVolumes.findAndAddAsVolumes(ordererPathOnHost(this.name()), spec);
     }
 
-    private ordererPathOnHost() {
-        return Path.join('orderers', this.name());
-    }
-
-
-    mountCryptographicMaterialFromVolume(container: IContainer, mountPath: string) {
-        this.organization.mountOrdererCryptographicMaterialFromVolume(this.name(), container, mountPath);
+    mountCryptographicMaterialIntoVolume(container: IContainer, mountPath: string) {
+        this.organization.mountOrdererCryptographicMaterialIntoVolume(this.name(), container, mountPath);
     }
 
     addGenesisBlockAsVolume(spec: IPodSpec) {
@@ -99,8 +80,8 @@ export default class Orderer implements IOrderer, ICryptographicMaterialCollecto
         this.organization.mountGenesisBlock(container, mountPath);
     }
 
-    mountGenesisBlockDirectoryFromVolume(container: IContainer, mountPath: string) {
-        this.organization.mountGenesisBlockDirectoryFromVolume(container, mountPath);
+    mountGenesisBlockDirectoryIntoVolume(container: IContainer, mountPath: string) {
+        this.organization.mountGenesisBlockDirectoryIntoVolume(container, mountPath);
     }
 
     mountGenesisBlockFileFromVolume(container: IContainer, mountPath: string) {
@@ -114,5 +95,4 @@ export default class Orderer implements IOrderer, ICryptographicMaterialCollecto
     mountTls(container: IContainer, mountPath: string) {
         this.organization.mountOrdererTlsFromVolume(this.name(), container, mountPath);
     }
-
 }

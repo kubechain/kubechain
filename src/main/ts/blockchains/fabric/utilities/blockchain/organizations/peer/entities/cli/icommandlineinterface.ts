@@ -13,4 +13,11 @@ export default interface ICommandLineInterface extends IChannelCollector, IChain
     mountMspCryptographicMaterial(container: IContainer, mountPath: string): void;
 
     addPeerAdminCryptographicMaterialAsVolumes(spec: IPodSpec): void;
+
+    //TODO: Fix below functions they violate 'tell don't ask'
+    namespace(): string;
+
+    organizationName(): string;
+
+    mspID(): string;
 }

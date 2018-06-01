@@ -12,13 +12,20 @@ import * as Path from "path";
 import IVolume from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/ivolume";
 import IContainer from "../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
 import IPodSpec from "../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
-import ConfigMapTuples from "../../../utilities/kubernetes/configmaptuples";
-import ConfigMapTuple from "../../../utilities/kubernetes/configmaptuple";
 import {createDirectories} from "../../../../../util";
-import {directoryTreeToConfigMapTuples} from "../../../utilities/kubernetes/configmap";
 import DirectoryOrCreateHostPathPersistentVolume from "../../../../../kubernetes-sdk/api/1.8/cluster/persistentvolumes/hostpath/directoryorcreate";
 import ResourceWriter from "../../../utilities/blockchain/resourcewriter/resourcewriter";
 import IOrdererOrganization from "../../../utilities/blockchain/organizations/orderer/irordererorganization";
+import ConfigMap from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
+import ConfigurationDirectoryTree from "../../../utilities/kubernetes/files/configurationdirectorytree";
+import {directoryTreeToConfigMapDirectoryTree} from "../../../utilities/kubernetes/files/files";
+import ConfigurationCollector from "../../../utilities/blockchain/configurationcollector";
+import {
+    minikubeSharedFolder,
+    ordererMspPathInContainer, ordererPathInContainer,
+    ordererTlsPathInContainer
+} from "../../../utilities/blockchain/cryptographic/paths";
+import FabricVolume from "../../../utilities/blockchain/volumes/volume";
 
 export default class OrdererOrganization implements IOrdererOrganization {
     private options: Options;
@@ -29,8 +36,8 @@ export default class OrdererOrganization implements IOrdererOrganization {
     private persistentVolume: DirectoryOrCreateHostPathPersistentVolume;
     private _namespace: Namespace;
     private ordererOrganization: UtilOrdererOrganization;
-    private volume: IVolume;
-    private cryptographicMaterial: ConfigMapTuples;
+    private volume: FabricVolume;
+    private cryptographicMaterial: ConfigurationDirectoryTree<ConfigMap>;
     private writer: ResourceWriter;
 
     constructor(options: Options, representation: OrganizationRepresentation) {
@@ -85,7 +92,7 @@ export default class OrdererOrganization implements IOrdererOrganization {
 
     private createPersistentVolume() {
         this.persistentVolume = new DirectoryOrCreateHostPathPersistentVolume(new ObjectMeta(this.ordererOrganization.name(), undefined));
-        this.persistentVolume.setHostPath(this.minikubeSharedFolder());// TODO: Move to util
+        this.persistentVolume.setHostPath(minikubeSharedFolder(this.representation.name));
         this.persistentVolume.setCapacity({
             "storage": "50Mi"
         });
@@ -99,7 +106,7 @@ export default class OrdererOrganization implements IOrdererOrganization {
         requirements.setRequests({"storage": "10Mi"});
         this.persistentVolumeClaim.setResourceRequirements(requirements);
 
-        this.volume = this.persistentVolumeClaim.toVolume();
+        this.volume = new FabricVolume(this.persistentVolumeClaim.toVolume());
 
         this.ordererOrganization.volume = this.volume;
 
@@ -115,27 +122,16 @@ export default class OrdererOrganization implements IOrdererOrganization {
         });
     }
 
-    private minikubeSharedFolder(): string {
-        return Path.posix.join(Path.posix.sep, 'data', '.kubechain', 'fabric', this.representation.name);
-    }
-
     private createConfiguration(): void {
         this.createCryptographicMaterial();
     }
 
     private createCryptographicMaterial(): void {
-        this.cryptographicMaterial = directoryTreeToConfigMapTuples(this.representation.path, this.namespace());
-        const tuples = this.cryptographicMaterial.findForAbsolutePath(this.representation.path);
-        tuples.forEach((tuple: ConfigMapTuple) => {
-            const configMap = tuple.getConfigMap();
-            const json = configMap.toJson();
-            const name = json.metadata.name; //TODO: Change this. Ok for now.
-            this.writer.addResource({
-                path: this.outputPaths.configmaps,
-                name: name,
-                resource: configMap
-            });
-        })
+        this.cryptographicMaterial = directoryTreeToConfigMapDirectoryTree(this.representation.path, this.namespace());
+        const directories = this.cryptographicMaterial.findDirectoriesForAbsolutePath(this.representation.path);
+
+        const cryptographicMaterialCollector = new ConfigurationCollector(directories);
+        cryptographicMaterialCollector.addToWriter(this.writer, this.outputPaths.configmaps);
     }
 
     private createNamespace(): void {
@@ -159,15 +155,9 @@ export default class OrdererOrganization implements IOrdererOrganization {
         return type === 'orderer';
     }
 
-    mountOrdererCryptographicMaterialFromVolume(ordererName: string, container: IContainer, mountPath: string) {
-        const peerSubPath = this.ordererPathInContainer(ordererName);
-        const mount = this.volume.toVolumeMount(Path.posix.join(mountPath, peerSubPath));
-        mount.setSubPath(peerSubPath);
-        container.addVolumeMount(mount);
-    }
-
-    private ordererPathInContainer(ordererName: string): string {
-        return Path.posix.join('orderers', ordererName);
+    mountOrdererCryptographicMaterialIntoVolume(ordererName: string, container: IContainer, mountPath: string) {
+        const ordererSubPath = ordererPathInContainer(ordererName);
+        this.volume.mount(container, Path.posix.join(mountPath, ordererSubPath), ordererSubPath);
     }
 
     addGenesisBlockAsVolume(spec: IPodSpec) {
@@ -178,8 +168,8 @@ export default class OrdererOrganization implements IOrdererOrganization {
         this.ordererOrganization.mountGenesisBlock(container, mountPath);
     }
 
-    mountGenesisBlockDirectoryFromVolume(container: IContainer, mountPath: string) {
-        this.ordererOrganization.mountGenesisBlockDirectoryFromVolume(container, mountPath);
+    mountGenesisBlockDirectoryIntoVolume(container: IContainer, mountPath: string) {
+        this.ordererOrganization.mountGenesisBlockDirectoryIntoVolume(container, mountPath);
     }
 
     mountGenesisBlockFileFromVolume(container: IContainer, mountPath: string) {
@@ -191,22 +181,10 @@ export default class OrdererOrganization implements IOrdererOrganization {
     }
 
     mountOrdererMspFromVolume(ordererName: string, container: IContainer, mountPath: string) {
-        const mspVolumeMount = this.volume.toVolumeMount(mountPath);
-        mspVolumeMount.setSubPath(this.mspPathInContainer(ordererName));
-        container.addVolumeMount(mspVolumeMount);
+        this.volume.mount(container, mountPath, ordererMspPathInContainer(ordererName));
     }
 
-    private mspPathInContainer(ordererName: string): string {
-        return Path.posix.join('orderers', ordererName, 'msp');
-    }
-
-    mountOrdererTlsFromVolume(ordererName: string, container: IContainer, tlsMountPath: string) {
-        const tlsVolumeMount = this.volume.toVolumeMount(tlsMountPath);
-        tlsVolumeMount.setSubPath(this.tlsPathInContainer(ordererName));
-        container.addVolumeMount(tlsVolumeMount);
-    }
-
-    private tlsPathInContainer(ordererName: string): string {
-        return Path.posix.join('orderers', ordererName, 'tls');
+    mountOrdererTlsFromVolume(ordererName: string, container: IContainer, mountPath: string) {
+        this.volume.mount(container, mountPath, ordererTlsPathInContainer(ordererName));
     }
 }

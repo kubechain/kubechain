@@ -1,5 +1,4 @@
 import Options from "../../../../../options";
-import CommandLineInterfaceDeployment from "./deployment";
 import PeerOrganization from "../../peer";
 import IPodSpec from "../../../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import IContainer from "../../../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
@@ -10,12 +9,14 @@ import ResourceWriter from "../../../../../utilities/blockchain/resourcewriter/r
 import IHasResources from "../../../../../utilities/blockchain/organizations/ihasresources";
 import ICommandLineInterface from "../../../../../utilities/blockchain/organizations/peer/entities/cli/icommandlineinterface";
 import * as Path from "path";
-
+import {peerAdminMspPathInContainer} from "../../../../../utilities/blockchain/cryptographic/paths";
+import CommandLineInterfaceDeployment from "../../../../../utilities/blockchain/organizations/peer/entities/cli/deployment";
+import FabricVolume from "../../../../../utilities/blockchain/volumes/volume";
 
 export default class CommandLineInterFace implements IHasResources, ICommandLineInterface {
     private options: Options;
     private organization: PeerOrganization;
-    private volume: IVolume;
+    private volume: FabricVolume;
     private writer: ResourceWriter;
     private outputPath: string;
 
@@ -56,7 +57,7 @@ export default class CommandLineInterFace implements IHasResources, ICommandLine
         requirements.setRequests({"storage": "10Mi"});
         persistentVolumeClaim.setResourceRequirements(requirements);
 
-        this.volume = persistentVolumeClaim.toVolume();
+        this.volume = new FabricVolume(persistentVolumeClaim.toVolume());
         this.writer.addResource({path: this.outputPath, name: "cli-pvc", resource: persistentVolumeClaim});
     }
 
@@ -69,9 +70,7 @@ export default class CommandLineInterFace implements IHasResources, ICommandLine
     }
 
     mountMspCryptographicMaterial(container: IContainer, mountPath: string) {
-        const toVolumeMount = this.volume.toVolumeMount(mountPath);
-        toVolumeMount.setSubPath(this.organization.adminMspMountPath());
-        container.addVolumeMount(toVolumeMount);
+        this.volume.mount(container, mountPath, peerAdminMspPathInContainer(this.organizationName()))
     }
 
     addPeerAdminCryptographicMaterialAsVolumes(spec: IPodSpec): void {
@@ -79,13 +78,7 @@ export default class CommandLineInterFace implements IHasResources, ICommandLine
     }
 
     mountPeerAdminCryptographicMaterialFromVolume(container: IContainer, mountPath: string): void {
-        const toVolumeMount = this.volume.toVolumeMount(Path.posix.join(mountPath, this.peerAdminPathInContainer()));
-        toVolumeMount.setSubPath(this.peerAdminPathInContainer());
-        container.addVolumeMount(toVolumeMount);
-    }
-
-    private peerAdminPathInContainer() {
-        return Path.posix.join('users', `Admin@${this.organization.name()}`, 'msp');
+        this.volume.mount(container, mountPath, peerAdminMspPathInContainer(this.organizationName()))
     }
 
     mountChannels(container: IContainer, mountPath: string): void {

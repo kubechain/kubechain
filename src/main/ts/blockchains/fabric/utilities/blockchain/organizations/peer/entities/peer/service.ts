@@ -1,5 +1,5 @@
-import ServicePort from "../../../../../../../kubernetes-sdk/api/1.8/discovery-load-balancing/services/ports/serviceport";
-import ClusterIPService from "../../../../../../../kubernetes-sdk/api/1.8/discovery-load-balancing/services/clusterip/clusterip";
+import ClusterIPService from "../../../../../../../../kubernetes-sdk/api/1.8/discovery-load-balancing/services/clusterip/clusterip";
+import ServicePort from "../../../../../../../../kubernetes-sdk/api/1.8/discovery-load-balancing/services/ports/serviceport";
 
 export default class PeerService {
     private service: ClusterIPService;
