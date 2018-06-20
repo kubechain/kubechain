@@ -9,7 +9,7 @@ This tutorial walks you through using Kubechain and creating chaincode and chann
 ## Configuration 
 1. In your current working directory (CWD) add the following path `./configuration/fabric/`.
 1. Copy [the blockchain directory](docs/tutorials/fabric/configuration-samples/blockchain) to the directory you just created.
-1. If you've left the original CWD go there again and copy [the chaincode-and-channel file](fabric/configuration-samples/kubechain/chaincode-and-channel.kubechain.config.js) to the CWD.
+1. If you've left the original CWD go there again and copy [the chaincode-and-channel file](/configuration-samples/kubechain/chaincode-and-channel.kubechain.config.js) to the CWD.
 1. Rename the file to ``kubechain.config.js``
 
 ## Cluster creation
