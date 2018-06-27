@@ -1,5 +1,7 @@
 import ConfigurationDirectory from "./configurationdirectory";
 import IVolumeSource from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/volumesources/ivolumesource";
+import IContainer from "../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
+import IPodSpec from "../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 
 export default class ConfigurationDirectoryTree<T extends IVolumeSource> {
     private rootPath: string;
@@ -42,5 +44,21 @@ export default class ConfigurationDirectoryTree<T extends IVolumeSource> {
             }
         });
         return directories;
+    }
+
+    mountAllWithRelativePath(container: IContainer, baseMountPath: string): void {
+        this.directories.forEach((directory: ConfigurationDirectory<T>) => {
+            directory.mountWithRelativePath(container, baseMountPath);
+        });
+    }
+
+    addAllAsVolume(spec: IPodSpec) {
+        this.directories.forEach((directory: ConfigurationDirectory<T>) => {
+            directory.addAsVolume(spec);
+        });
+    }
+
+    getAll(): ConfigurationDirectory<T>[] {
+        return this.directories;
     }
 }

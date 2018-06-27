@@ -9,7 +9,7 @@ import ResourceRequirements from "../../../../../../kubernetes-sdk/api/1.8/meta/
 import ResourceWriter from "../../../../utilities/blockchain/resourcewriter/resourcewriter";
 import IOrderer from "../../../../utilities/blockchain/organizations/orderer/entities/orderer/iorderer";
 import {toDNS1123} from "../../../../../../kubernetes-sdk/utilities/naming";
-import ConfigurationDirectoryTree from "../../../../utilities/kubernetes/files/configurationdirectorytree";
+import ConfigurationDirectoryTree from "../../../../utilities/kubernetes/directorytree/configurationdirectorytree";
 import ConfigMap from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
 import {
     genesisBlockDirectoryPathInContainer,

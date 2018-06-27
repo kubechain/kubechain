@@ -8,11 +8,6 @@ import OrganizationRepresentation from "../../../utilities/blockchain/representa
 import OrganizationEntityRepresentation from "../../../utilities/blockchain/representation/organizations/entities/representation";
 import {createDirectories} from "../../../../../util";
 import ResourceWriter from "../../../utilities/blockchain/resourcewriter/resourcewriter";
-import {directoryTreeToConfigMapDirectoryTree} from "../../../utilities/kubernetes/files/files";
-import ChainCodeOptions from "../../../utilities/blockchain/chaincode/options";
-import Channel from "../../../utilities/blockchain/channel/channel";
-import ChannelOptions from "../../../utilities/blockchain/channel/options";
-import ChainCode from "../../../utilities/blockchain/chaincode/chaincode";
 import ConfigMap from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
 import IContainer from "../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
 import IPodSpec from "../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
@@ -24,6 +19,8 @@ import {
 import Organization from "../../../utilities/blockchain/organizations/organization";
 import IOrganization from "../../../utilities/blockchain/organizations/iorganization";
 import ConfigurationDirectoryTreeVolumes from "../../../utilities/blockchain/volumes/configurationdirectorytreevolumes";
+import UtilPeerOrganization from "../../../utilities/blockchain/organizations/peer/organization";
+import IMountable from "../../../utilities/blockchain/mountable";
 
 interface OutputPaths {
     channels: string;
@@ -42,13 +39,15 @@ export default class PeerOrganization implements IOrganization, IChainCodeCollec
     private cryptographicMaterialVolumes: ConfigurationDirectoryTreeVolumes<ConfigMap>;
     private writer: ResourceWriter;
     private kubeDnsClusterIp: string;
-    private chainCodes: ChainCode[];
-    private channels: Channel[];
+    private chainCodes: IMountable[];
+    private channels: IMountable[];
+    private peerOrganization: UtilPeerOrganization;
 
     constructor(options: Options, representation: OrganizationRepresentation, kubeDnsClusterIp: string) {
         this.kubeDnsClusterIp = kubeDnsClusterIp;
         this.organization = new Organization(representation);
         this.options = options;
+        this.peerOrganization = new UtilPeerOrganization(options);
         this.representation = representation;
         this.configPath = representation.path;
         this.outputPaths = this.createOutputPaths();
@@ -103,29 +102,16 @@ export default class PeerOrganization implements IOrganization, IChainCodeCollec
     }
 
     private createCryptoMaterial() {
-        const cryptographicMaterial = directoryTreeToConfigMapDirectoryTree(this.representation.path, this.namespace());
-        this.cryptographicMaterialVolumes = new ConfigurationDirectoryTreeVolumes(cryptographicMaterial);
-        this.cryptographicMaterialVolumes.findAndAddToWriter(this.representation.path, this.writer, this.outputPaths.configmaps)
+        this.cryptographicMaterialVolumes = this.peerOrganization.createCryptographicMaterial(this.representation.path, this.namespace());
+        this.cryptographicMaterialVolumes.findAndAddToWriter(this.representation.path, this.writer, this.outputPaths.configmaps);
     }
 
     private createChainCodes() {
-        const chaincodes = this.options.get('$.options.chaincodes');
-        chaincodes.forEach((chainCodeOptions: ChainCodeOptions) => {
-            chainCodeOptions.path = chainCodeOptions.path || Path.join(this.options.get('$.blockchain.paths.chaincodes'), chainCodeOptions.id);
-            const chainCode = new ChainCode(chainCodeOptions, this.namespace());
-            chainCode.addToWriter(this.writer, Path.join(this.outputPaths.chaincodes, chainCodeOptions.id));
-            this.chainCodes.push(chainCode);
-        });
+        this.chainCodes = this.peerOrganization.createChainCodes(this.writer, this.namespace(), this.outputPaths.chaincodes);
     }
 
     private createChannels() {
-        const channels = this.options.get('$.options.channels') || [];
-        channels.forEach((channelOptions: ChannelOptions) => {
-            channelOptions.path = channelOptions.path || Path.join(this.options.get('$.blockchain.paths.channels'), channelOptions.name);
-            const channel = new Channel(channelOptions, this.namespace());
-            channel.addToWriter(this.writer, Path.join(this.outputPaths.channels, channelOptions.name));
-            this.channels.push(channel);
-        });
+        this.channels = this.peerOrganization.createChannels(this.writer, this.namespace(), this.outputPaths.channels);
     }
 
     private createNamespace() {
@@ -188,26 +174,18 @@ export default class PeerOrganization implements IOrganization, IChainCodeCollec
     }
 
     mountChainCodes(container: IContainer, mountPath: string): void {
-        this.chainCodes.forEach((chainCode) => {
-            chainCode.mount(container, mountPath);
-        });
+        this.peerOrganization.mountMountables(this.chainCodes, container, mountPath);
     }
 
     addChainCodeAsVolumes(spec: IPodSpec): void {
-        this.chainCodes.forEach((chainCode) => {
-            chainCode.addAsVolume(spec);
-        });
+        this.peerOrganization.addMountablesAsVolumes(this.chainCodes, spec);
     }
 
     mountChannels(container: IContainer, mountPath: string): void {
-        this.channels.forEach((channel: Channel) => {
-            channel.mount(container, mountPath);
-        })
+        this.peerOrganization.mountMountables(this.channels, container, mountPath);
     }
 
     addChannelsAsVolumes(spec: IPodSpec): void {
-        this.channels.forEach((channel: Channel) => {
-            channel.addAsVolume(spec);
-        })
+        this.peerOrganization.addMountablesAsVolumes(this.channels, spec);
     }
 }

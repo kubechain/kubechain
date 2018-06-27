@@ -14,6 +14,7 @@ import ClusterRoleBinding from "./cluster/clusterrolebinding";
 import StorageClass from "./cluster/storageclass";
 import CustomResourceDefinition from "./cluster/customeresourcedefinition";
 import ServiceAccount from "./cluster/serviceaccount";
+import DaemonSet from "./namespaced/daemonset";
 
 //TODO: Change to Enum.
 
@@ -57,7 +58,7 @@ function kindIsWorkload(kind: string): boolean {
 }
 
 function kindsWithNamespace(): IKind[] {
-    return [new ServiceAccount(), new Secret(), new ConfigMap(), new PersistentVolumeClaim(), new Service(), new StatefulSet(), new Pod(), new Deployment(), new Job()];
+    return [new ServiceAccount(), new Secret(), new ConfigMap(), new PersistentVolumeClaim(), new Service(), new StatefulSet(), new Pod(), new Deployment(), new Job(), new DaemonSet()];
 }
 
 function isKind(kindToValidate: string) {

@@ -5,10 +5,10 @@ import ResourceWriter from "../../../../utilities/blockchain/resourcewriter/reso
 import IPodSpec from "../../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import IContainer from "../../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
 import IOrderer from "../../../../utilities/blockchain/organizations/orderer/entities/orderer/iorderer";
-import ConfigurationDirectoryTree from "../../../../utilities/kubernetes/files/configurationdirectorytree";
+import ConfigurationDirectoryTree from "../../../../utilities/kubernetes/directorytree/configurationdirectorytree";
 import ConfigMap from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
 import {
-    ordererPathInContainer, ordererPathOnHost,
+    ordererPathOnHost,
 } from "../../../../utilities/blockchain/cryptographic/paths";
 import {identifier} from "../../../../utilities/blockchain/organizations/identifiers";
 import OrdererDeployment from "../../../../utilities/blockchain/organizations/orderer/entities/orderer/deployment";

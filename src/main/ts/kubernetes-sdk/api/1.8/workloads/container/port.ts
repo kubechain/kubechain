@@ -12,6 +12,10 @@ export default class ContainerPort implements IResource {
         this.port = port;
     }
 
+    setHostPort(hostPort: number) {
+        this.hostPort = hostPort;
+    }
+
     toJson(): any {
         return {
             "name": this.name,

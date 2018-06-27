@@ -25,7 +25,9 @@ export default class ServiceSpec implements IResource, IServiceSpec {
         return {
             "selector": this.selector,
             "type": this.type,
-            "ports": this.ports
+            "ports": this.ports.map((port: IServicePort) => {
+                return port.toJson()
+            })
         }
     }
 }

@@ -1,8 +1,6 @@
 import IWorkloadHooks from "./iworkloadhooks";
 
 export default interface IHooks {
-    loadedConfiguration(data: any): void;
-
     createdRepresentations(data: any): void;
 
     createdWorkloads(data: any): void;

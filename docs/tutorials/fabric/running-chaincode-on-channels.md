@@ -47,6 +47,6 @@ peer channel create -o orderer0.ordererorg-f-1:7050 -c kubechain -f ./channels/k
 peer channel join -b ./kubechain.block
 peer channel update -o orderer0.ordererorg-f-1:7050 -c kubechain -f ./channels/kubechain/Org1MSPanchors.tx
 peer chaincode install -n mycc -v 1.0 -p github.com/hyperledger/fabric/peer/chaincodes/chaincode_example02
-peer chaincode instantiate -o orderer0.ordererorg-f-1:7050 -C "kubechain" -n mycc -v 1.0 -c '{"Args": ["init","a","100","b","200"]}' -P "OR ('Org1MSP.member', 'Org2MSP.member')"
+peer chaincode instantiate -o orderer0.ordererorg:7050 -C "kubechain" -n mycc -v 1.0 -c '{"Args": ["init","a","100","b","200"]}' -P "OR ('Org1MSP.member', 'Org2MSP.member')"
 peer chaincode query -C kubechain -n mycc -c '{"Args":["query","a"]}'
 ``

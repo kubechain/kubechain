@@ -10,10 +10,10 @@ import IPodSpec from "../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodsp
 import {createDirectories} from "../../../../../util";
 import ResourceWriter from "../../../utilities/blockchain/resourcewriter/resourcewriter";
 import IOrdererOrganization from "../../../utilities/blockchain/organizations/orderer/irordererorganization";
-import {directoryTreeToConfigMapDirectoryTree} from "../../../utilities/kubernetes/files/files";
-import ConfigurationDirectoryTree from "../../../utilities/kubernetes/files/configurationdirectorytree";
+import ConfigurationDirectoryTree from "../../../utilities/kubernetes/directorytree/configurationdirectorytree";
 import ConfigMap from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
 import ConfigurationCollector from "../../../utilities/blockchain/configurationcollector";
+import DirectoryTree from "../../../utilities/kubernetes/directorytree/directorytree";
 
 export default class OrdererOrganization implements IOrdererOrganization {
     private options: Options;
@@ -80,7 +80,8 @@ export default class OrdererOrganization implements IOrdererOrganization {
     }
 
     private createCryptographicMaterial(): void {
-        this.cryptographicMaterial = directoryTreeToConfigMapDirectoryTree(this.representation.path, this.namespace());
+        const directoryTree = new DirectoryTree(this.representation.path);
+        this.cryptographicMaterial = directoryTree.convertToConfigMapDirectoryTree(this.namespace());
         const directories = this.cryptographicMaterial.findDirectoriesForAbsolutePath(this.representation.path);
 
         const cryptographicMaterialCollector = new ConfigurationCollector(directories);

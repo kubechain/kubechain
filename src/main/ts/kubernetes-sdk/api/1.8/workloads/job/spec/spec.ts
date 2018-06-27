@@ -10,12 +10,13 @@ import PodTemplateSpec from "../../pod/template/podtemplatespec";
 import PodSpec from "../../pod/podspec";
 
 export default class JobSpec implements IJobSpec, IResource {
-
-    completions: number;
+    private backOffLimit: number;
+    private completions: number;
     private selector: ILabelSelector;
     private template: PodTemplateSpec;
 
     constructor() {
+        this.backOffLimit = 6;
         this.completions = 1;
         this.selector = new LabelSelector();
         this.template = new PodTemplateSpec();
@@ -24,6 +25,9 @@ export default class JobSpec implements IJobSpec, IResource {
         this.template.setSpec(spec)
     }
 
+    setBackOffLimit(backOffLimit: number): void {
+        this.backOffLimit = backOffLimit;
+    }
 
     addMatchLabel(key: any, value: any): void {
         this.selector.addMatchLabel(key, value);
@@ -68,6 +72,7 @@ export default class JobSpec implements IJobSpec, IResource {
     toJson() {
         return {
             selector: this.selector.toJson(),
+            backoffLimit: this.backOffLimit,
             template: this.template.toJson()
         }
     }

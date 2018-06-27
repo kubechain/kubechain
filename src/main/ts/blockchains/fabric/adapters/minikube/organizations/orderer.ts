@@ -9,7 +9,6 @@ import Orderer from "./orderer/orderer";
 import OrganizationRepresentation from "../../../utilities/blockchain/representation/organizations/representation";
 import OrganizationEntityRepresentation from "../../../utilities/blockchain/representation/organizations/entities/representation";
 import * as Path from "path";
-import IVolume from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/ivolume";
 import IContainer from "../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
 import IPodSpec from "../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import {createDirectories} from "../../../../../util";
@@ -17,8 +16,7 @@ import DirectoryOrCreateHostPathPersistentVolume from "../../../../../kubernetes
 import ResourceWriter from "../../../utilities/blockchain/resourcewriter/resourcewriter";
 import IOrdererOrganization from "../../../utilities/blockchain/organizations/orderer/irordererorganization";
 import ConfigMap from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
-import ConfigurationDirectoryTree from "../../../utilities/kubernetes/files/configurationdirectorytree";
-import {directoryTreeToConfigMapDirectoryTree} from "../../../utilities/kubernetes/files/files";
+import ConfigurationDirectoryTree from "../../../utilities/kubernetes/directorytree/configurationdirectorytree";
 import ConfigurationCollector from "../../../utilities/blockchain/configurationcollector";
 import {
     minikubeSharedFolder,
@@ -26,6 +24,7 @@ import {
     ordererTlsPathInContainer
 } from "../../../utilities/blockchain/cryptographic/paths";
 import FabricVolume from "../../../utilities/blockchain/volumes/volume";
+import DirectoryTree from "../../../utilities/kubernetes/directorytree/directorytree";
 
 export default class OrdererOrganization implements IOrdererOrganization {
     private options: Options;
@@ -127,7 +126,8 @@ export default class OrdererOrganization implements IOrdererOrganization {
     }
 
     private createCryptographicMaterial(): void {
-        this.cryptographicMaterial = directoryTreeToConfigMapDirectoryTree(this.representation.path, this.namespace());
+        const directoryTree = new DirectoryTree(this.representation.path);
+        this.cryptographicMaterial = directoryTree.convertToConfigMapDirectoryTree(this.namespace());
         const directories = this.cryptographicMaterial.findDirectoriesForAbsolutePath(this.representation.path);
 
         const cryptographicMaterialCollector = new ConfigurationCollector(directories);

@@ -2,7 +2,6 @@ import * as Path from "path";
 
 const jsonpath = require('jsonpath');
 import KubechainTargets from "./targets";
-import IHooks from "../blockchains/utilities/iadapterhooks";
 import ITargetsJson from "./itargetsjson";
 
 interface Options {
@@ -15,7 +14,7 @@ interface Options {
         kubernetes: string
     }
     adapter: {
-        hooks: IHooks
+        hooks: object
         options: object
     }
 }
@@ -54,32 +53,7 @@ export default class Kubechain {
                 kubernetes: ""
             }),
             adapter: {
-                hooks: {
-                    loadedConfiguration(data: any) {
-                    },
-
-                    createdRepresentations(data: any) {
-                    },
-
-                    createdWorkloads(data: any) {
-                    },
-
-                    beforeWrite(data: any) {
-                    },
-
-                    written(data: any) {
-                    },
-                    workload: {
-                        beforeCreate(data: any) {
-                        },
-                        createdConfiguration(data: any) {
-                        },
-                        created(data: any) {
-                        },
-                        beforeWrite(data: any) {
-                        }
-                    }
-                },
+                hooks: {},
                 options: {}
             },
             paths: {

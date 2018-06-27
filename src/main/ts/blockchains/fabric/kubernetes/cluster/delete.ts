@@ -19,8 +19,9 @@ export default class ClusterDeleter implements ICommandExecutor {
         try {
             console.info('[REMOVING]');
             this.context = await promptUserForDesiredContext();
-            await this.removeOrdererOrganizations();
+            await this.deleteOrdererOrganizations();
             await this.deletePeerOrganizations();
+            await this.deletePostLaunch();
         }
         catch (e) {
             console.error("Unable to delete cluster.");
@@ -28,7 +29,7 @@ export default class ClusterDeleter implements ICommandExecutor {
         }
     }
 
-    private removeOrdererOrganizations() {
+    private deleteOrdererOrganizations() {
         console.info('[ORDERER-ORGANISATIONS]');
         return this.deleteOrganizations(this.options.get('$.kubernetes.paths.ordererorganizations'));
     }
@@ -52,5 +53,10 @@ export default class ClusterDeleter implements ICommandExecutor {
         const organizationPath = path.join(basePath, name);
         const resourceDeleter = new KubernetesResourceDeleter(name, this.context);
         return resourceDeleter.deleteResourcesFoundInDirectoryTree(organizationPath);
+    }
+
+    private deletePostLaunch() {
+        const resourceDeleter = new KubernetesResourceDeleter("default", this.context);
+        return resourceDeleter.deleteResourcesFoundInDirectoryTree(this.options.get('$.kubernetes.paths.postlaunch'));
     }
 }

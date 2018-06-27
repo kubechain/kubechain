@@ -1,39 +1,34 @@
-import ObjectMeta from "../../meta/objectmeta";
-import IJobSpec from "./spec/ijobspec";
+import IDaemonSetSpec from "./specs/idaemonsetspec";
+import DeamonSetSpec from "./specs/daemonsetspec";
 import Affinity from "../pod/affinity/affinity";
 import PodSecurityContext from "../pod/securitycontext";
 import IContainer from "../container/icontainer";
 import IVolume from "../../configuration-storage/storage/volumes/ivolume";
-import JobSpec from "./spec/spec";
+import ObjectMeta from "../../meta/objectmeta";
 
-
-export default class Job implements IJobSpec {
+export default class DaemonSet implements IDaemonSetSpec {
+    private spec: IDaemonSetSpec;
     private metadata: ObjectMeta;
-    private spec: IJobSpec;
 
     constructor(name: string, namespace: string) {
         this.metadata = new ObjectMeta(name, namespace);
-        this.spec = new JobSpec();
+        this.spec = new DeamonSetSpec();
     }
 
-    setSpec(spec: IJobSpec): void {
+    setSpec(spec: IDaemonSetSpec) {
         this.spec = spec;
     }
 
-    setBackOffLimit(backOffLimit: number): void {
-        this.spec.setBackOffLimit(backOffLimit);
+    addLabel(key: string, value: any): void {
+        this.metadata.addLabel(key, value);
     }
 
     addMatchLabel(key: any, value: any): void {
         this.spec.addMatchLabel(key, value);
     }
 
-    addLabel(key: string, value: any): void {
-        this.spec.addLabel(key, value);
-    }
-
     setAffinity(affinity: Affinity): void {
-        this.spec.setAffinity(affinity);
+        this.spec.setAffinity(affinity)
     }
 
     setHostname(hostname: string): void {
@@ -66,11 +61,10 @@ export default class Job implements IJobSpec {
 
     toJson(): any {
         return {
-            apiVersion: "batch/v1",
-            kind: "Job",
+            apiVersion: "apps/v1beta2",
+            kind: "DaemonSet",
             metadata: this.metadata.toJson(),
             spec: this.spec.toJson()
         };
     }
-
 }

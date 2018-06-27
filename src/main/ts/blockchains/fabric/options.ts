@@ -2,15 +2,16 @@ import * as jsonpath from 'jsonpath';
 import * as Path from 'path';
 
 import Kubechain from "../../kubechain/kubechain";
-import IHooks from "../utilities/iadapterhooks";
 import KubechainTargets from "../../kubechain/targets";
 import IChannel from "./utilities/blockchain/channel/options";
 import IChainCode from "./utilities/blockchain/chaincode/options";
+import FabricHooks from "./utilities/blockchain/hooks";
+
 
 interface FabricOptions {
     name: string
     version: string
-    hooks: IHooks
+    hooks: FabricHooks
     options: {
         channels: IChannel[]
         chaincodes: IChainCode[]
@@ -50,6 +51,7 @@ interface FabricOptions {
             peerorganizations: string
             ordererorganizations: string
             chaincodes: string
+            postlaunch: string
         }
     }
 }
@@ -74,15 +76,18 @@ export default class Options {
         const kubernetesRoot = Path.join(this.kubechain.get('$.paths.kubernetes'), this.kubechain.get('$.name'));
         return {
             name: this.kubechain.get('$.name'),
-            version: '1.0.0',
+            version: this.kubechain.get('$.adapter.version') || '1.0.0',
             hooks: this.kubechain.get('$.adapter.hooks') || {
-                loadedConfiguration(data: any): void {
+                creatingOrganization(data): void {
+
+                },
+                createdCryptographicMaterial(data: any): void {
+                },
+
+                createdChannels(data: any): void {
                 },
 
                 createdRepresentations(data: any): void {
-                },
-
-                createdWorkloads(data: any): void {
                 },
 
                 beforeWrite(data: any): void {
@@ -105,7 +110,7 @@ export default class Options {
                     }
                 }
             },
-            options: this.kubechain.get('$.adapter.options'),
+            options: this.kubechain.get('$.adapter.options') || {chaincodes: [], channels: []},
             configuration: {
                 paths: {
                     root: configurationRoot,
@@ -140,7 +145,8 @@ export default class Options {
                     root: kubernetesRoot,
                     peerorganizations: Path.join(kubernetesRoot, 'peerOrganizations'),
                     ordererorganizations: Path.join(kubernetesRoot, 'ordererOrganizations'),
-                    chaincodes: Path.join(kubernetesRoot, 'chaincodes')
+                    chaincodes: Path.join(kubernetesRoot, 'chaincodes'),
+                    postlaunch: Path.join(kubernetesRoot, 'post-launch')
                 }
             }
         }
@@ -148,9 +154,5 @@ export default class Options {
 
     get(jsonPath: string): any {
         return jsonpath.value(this.options, jsonPath);
-    }
-
-    getAll(jsonPath: string): any {
-        return jsonpath.query(this.options, jsonPath);
     }
 }

@@ -1,7 +1,7 @@
 import IPodSpec from "../../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import IContainer from "../../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
 import ConfigurationCollector from "../configurationcollector";
-import ConfigurationDirectoryTree from "../../kubernetes/files/configurationdirectorytree";
+import ConfigurationDirectoryTree from "../../kubernetes/directorytree/configurationdirectorytree";
 import IConfigurationResource from "../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/iconfigurationresource";
 import ResourceWriter from "../resourcewriter/resourcewriter";
 
@@ -27,6 +27,19 @@ export default class ConfigurationDirectoryTreeVolumes<T extends IConfigurationR
     findAndAddToWriter(searchPath: string, writer: ResourceWriter, outputPath: string) {
         const configurationDirectories = this.directoryTree.findDirectoriesForAbsolutePath(searchPath);
         const cryptographicMaterialCollector = new ConfigurationCollector(configurationDirectories);
+        cryptographicMaterialCollector.addToWriter(writer, outputPath)
+    }
+
+    mountAllWithRelativePath(container: IContainer, baseMountPath: string): void {
+        this.directoryTree.mountAllWithRelativePath(container, baseMountPath);
+    }
+
+    addAllAsVolume(spec: IPodSpec) {
+        this.directoryTree.addAllAsVolume(spec);
+    }
+
+    addAllToWriter(writer: ResourceWriter, outputPath: string) {
+        const cryptographicMaterialCollector = new ConfigurationCollector(this.directoryTree.getAll());
         cryptographicMaterialCollector.addToWriter(writer, outputPath)
     }
 }

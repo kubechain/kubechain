@@ -2,13 +2,14 @@ import IContainer from "./icontainer";
 import EnvVar from "./envvar";
 import VolumeMount from "./volumemount";
 import ContainerPort from "./port";
+import SecurityContext from "./securitycontext";
 
 export default class Container implements IContainer {
     private name: string;
     private image: string;
     private imagePullPolicy: string;
     private commands: string[];
-    private securityContext: {};
+    private securityContext: SecurityContext;
     private environment: EnvVar[];
     private ports: ContainerPort[];
     private volumeMounts: VolumeMount[];
@@ -50,7 +51,7 @@ export default class Container implements IContainer {
         this.args.push(argument);
     }
 
-    setSecurityContext(context: {}) {
+    setSecurityContext(context: SecurityContext) {
         this.securityContext = context;
     }
 
@@ -63,9 +64,9 @@ export default class Container implements IContainer {
             "name": this.name,
             "image": this.image,
             "imagePullPolicy": this.imagePullPolicy,
-            "securityContext": this.securityContext,
-            "command": this.commands,
-            "args": this.args,
+            "securityContext": (this.securityContext) ? this.securityContext.toJson() : undefined,
+            "command": (this.commands && this.commands.length > 0) ? this.commands : undefined,
+            "args": (this.args && this.args.length > 0) ? this.args : undefined,
             "ports": this.ports.map(port => {
                 return port.toJson();
             }),

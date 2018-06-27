@@ -11,10 +11,10 @@ import OpaqueSecret from "../../../../../../kubernetes-sdk/api/1.8/configuration
 import * as path from "path";
 import {createDirectories} from "../../../../../../util";
 import Organization from "../organization";
-import {directoryTreeToConfigMapDirectoryTree} from "../../../kubernetes/files/files";
 import ConfigurationCollector from "../../configurationcollector";
 import ConfigMap from "../../../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/configmap/configmap";
-import ConfigurationDirectoryTree from "../../../kubernetes/files/configurationdirectorytree";
+import ConfigurationDirectoryTree from "../../../kubernetes/directorytree/configurationdirectorytree";
+import DirectoryTree from "../../../kubernetes/directorytree/directorytree";
 
 
 interface OutputPaths {
@@ -96,7 +96,9 @@ export default class OrdererOrganization implements IOrdererOrganization {
     }
 
     private createCryptographicMaterial(): void {
-        this.cryptographicMaterial = directoryTreeToConfigMapDirectoryTree(this.representation.path, this.namespace());
+        const directoryTree = new DirectoryTree(this.representation.path);
+        this.cryptographicMaterial = directoryTree.convertToConfigMapDirectoryTree(this.namespace());
+        // this.cryptographicMaterial = directoryTreeToConfigMapDirectoryTree(this.representation.path, this.namespace());
         const directories = this.cryptographicMaterial.findDirectoriesForAbsolutePath(this.representation.path);
 
         const cryptographicMaterialCollector = new ConfigurationCollector(directories);

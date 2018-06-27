@@ -16,7 +16,7 @@ export default class User implements IUser {
         this.path = path;
         this.type = type;
         this.membershipServiceProvider = new EntityMembershipServiceProvider(name, Path.join(path, 'msp'));
-        this.tls = new Tls(name, path);
+        this.tls = new Tls(name, Path.join(path, 'tls'));
     }
 
     toJson(): UserRepresentation {

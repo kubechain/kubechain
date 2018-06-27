@@ -7,6 +7,8 @@ import Options from "../../../../../../options";
 import Container from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/container";
 import ContainerPort from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/port";
 import EnvVar from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/envvar";
+import SecurityContext from "../../../../../../../../kubernetes-sdk/api/1.8/workloads/container/securitycontext";
+import EmptyDirVolume from "../../../../../../../../kubernetes-sdk/api/1.8/configuration-storage/storage/volumes/emptydir";
 
 export default class PeerDeployment implements IResource {
     private peer: IPeer;
@@ -17,6 +19,7 @@ export default class PeerDeployment implements IResource {
     private options: Options;
     private dns: string[];
     private dnsSearch: string[];
+    private peerDataVolume: EmptyDirVolume;
 
     constructor(peer: IPeer, options: Options) {
         this.peer = peer;
@@ -36,8 +39,10 @@ export default class PeerDeployment implements IResource {
         this.deployment.addMatchLabel("peer-id", this.peer.id());
         this.deployment.addMatchLabel("org", this.peer.organizationName());
 
+        this.peerDataVolume = new EmptyDirVolume("peer-data");
         this.runHostPathVolume = new DirectoryOrCreateHostPathVolume('run');
         this.runHostPathVolume.setHostPath(Path.posix.join(Path.posix.sep, 'var', 'run'));
+        this.deployment.addVolume(this.peerDataVolume);
         this.deployment.addVolume(this.runHostPathVolume);
         this.peer.addVolume(this.deployment);
         this.peer.addCryptographicMaterialAsVolumes(this.deployment);
@@ -88,6 +93,7 @@ export default class PeerDeployment implements IResource {
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_VM_DOCKER_HOSTCONFIG_DNS", this.dns.join(" ")));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_VM_DOCKER_HOSTCONFIG_DNSSEARCH", this.dnsSearch.join(" ")));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_CHAINCODE_LOGGING_LEVEL", "debug"));
+        hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_CHAINCODE_SHIM", "debug"));
 
         hyperledgerPeerContainer.setWorkingDirectory(workingDirectory);
         hyperledgerPeerContainer.addPort(new ContainerPort(undefined, 7051));
@@ -97,10 +103,13 @@ export default class PeerDeployment implements IResource {
         hyperledgerPeerContainer.addCommand("-c");
         hyperledgerPeerContainer.addCommand("--");
         hyperledgerPeerContainer.addArgument("sleep 5; peer node start");
-        hyperledgerPeerContainer.setSecurityContext({"priviledged": true});
+        const context = new SecurityContext();
+        context.setPrivileged(true);
+        hyperledgerPeerContainer.setSecurityContext(context);
 
         const hyperledgerMountPath = Path.posix.join(Path.posix.sep, 'etc', 'hyperledger', 'fabric');
 
+        hyperledgerPeerContainer.addVolumeMount(this.peerDataVolume.toVolumeMount(Path.posix.join(Path.posix.sep, "var", "hyperledger")));
         this.peer.mountTls(hyperledgerPeerContainer, Path.posix.join(hyperledgerMountPath, 'tls'));
         this.peer.mountMsp(hyperledgerPeerContainer, Path.posix.join(hyperledgerMountPath, 'msp'));
         this.peer.mountChainCodes(hyperledgerPeerContainer, Path.posix.join(workingDirectory, "chaincodes"));

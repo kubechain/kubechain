@@ -21,6 +21,7 @@ export default class ClusterCreator implements ICommandExecutor {
             this.context = await promptUserForDesiredContext();
             await this.launchOrdererOrganizations();
             await this.launchPeerOrganizations();
+            await this.postLaunch();
         }
         catch (e) {
             console.error("Unable to create cluster.");
@@ -51,7 +52,11 @@ export default class ClusterCreator implements ICommandExecutor {
     private createOrganization(basePath: string, name: string) {
         const organizationPath = path.join(basePath, name);
         const creator = new KubernetesResourceCreator(name, this.context);
-        creator.doNotCreateKind("Job");
         return creator.createResourcesFoundInDirectoryTree(organizationPath);
+    }
+
+    private postLaunch() {
+        const creator = new KubernetesResourceCreator("default", this.context);
+        return creator.createResourcesFoundInDirectoryTree(this.options.get('$.kubernetes.paths.postlaunch'));
     }
 }

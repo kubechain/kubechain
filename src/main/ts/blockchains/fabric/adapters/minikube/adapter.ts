@@ -6,17 +6,17 @@ import PeerOrganization from "./organizations/peer";
 import RepresentationCreator from "../../utilities/blockchain/representation/creator";
 import OrganizationRepresentation from "../../utilities/blockchain/representation/organizations/representation";
 import KubechainTargets from "../../../../kubechain/targets";
-import IHooks from "../../../utilities/iadapterhooks";
 import ResourceWriter from "../../utilities/blockchain/resourcewriter/resourcewriter";
 import * as KubernetesClient from "kubernetes-client";
 import Service from "../../../../kubernetes-sdk/utilities/kinds/namespaced/service";
 import {promptUserForDesiredContext} from "../../../utilities/cluster";
 import CrudResource from "../../../../kubernetes-sdk/utilities/resources/crud/crud-resource";
+import FabricHooks from "../../utilities/blockchain/hooks";
 
 export default class Adapter implements IAdapter {
     private options: Options;
     private creator: RepresentationCreator;
-    private hooks: IHooks;
+    private hooks: FabricHooks;
     private writer: ResourceWriter;
     private client: KubernetesClient.Client;
 
@@ -43,11 +43,13 @@ export default class Adapter implements IAdapter {
 
         this.hooks.createdRepresentations({
             orderers: ordererRepresentations,
-            peers: peerRepresentations
+            peers: peerRepresentations,
+            options: this.options
         });
 
         console.info('Creating Orderer Organizations');
         ordererRepresentations.forEach((representation: OrganizationRepresentation) => {
+            this.hooks.creatingOrganization({representation: representation, options: this.options});
             new OrdererOrganization(this.options, representation).addResources(this.writer);
         });
 
@@ -55,6 +57,7 @@ export default class Adapter implements IAdapter {
         const kubeDnsServiceClusterIP = await this.getKubeDnsServiceClusterIp();
         for (let i = 0; i < peerRepresentations.length; i++) {
             const representation = peerRepresentations[i];
+            this.hooks.creatingOrganization({representation: representation, options: this.options});
             await new PeerOrganization(this.options, representation, kubeDnsServiceClusterIP).addResources(this.writer);
         }
     }

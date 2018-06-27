@@ -1,10 +1,11 @@
 import ResourceWriter from "./resourcewriter/resourcewriter";
 import IContainer from "../../../../kubernetes-sdk/api/1.8/workloads/container/icontainer";
-import ConfigurationDirectory from "../kubernetes/files/configurationdirectory";
+import ConfigurationDirectory from "../kubernetes/directorytree/configurationdirectory";
 import IPodSpec from "../../../../kubernetes-sdk/api/1.8/workloads/pod/ipodspec";
 import IConfigurationResource from "../../../../kubernetes-sdk/api/1.8/configuration-storage/configuration/iconfigurationresource";
+import IMountable from "./mountable";
 
-export default class ConfigurationCollector<T extends IConfigurationResource> {
+export default class ConfigurationCollector<T extends IConfigurationResource> implements IMountable {
     private directories: ConfigurationDirectory<T>[];
 
     constructor(directories: ConfigurationDirectory<T>[]) {

@@ -7,6 +7,7 @@ export default class ResourceWriter {
     private resources: WriteResource[];
     private workloads: WriteResource[];
 
+    //TODO: Remove hooks
     constructor(hooks: IHooks) {
         this.hooks = hooks;
         this.resources = [];
@@ -14,20 +15,19 @@ export default class ResourceWriter {
     }
 
     write() {
-        this.hooks.beforeWrite({
-            resources: this.resources,
-            workloads: this.workloads
-        });
+        if (this.hooks) {
+            this.hooks.beforeWrite({
+                resources: this.resources,
+                workloads: this.workloads
+            });
+        }
 
         this.resources.forEach((resource: WriteResource) => {
             toJsonFile(resource.path, resource.name, resource.resource.toJson());
         });
         this.workloads.forEach((resource: WriteResource) => {
-            // this.hooks.workload.beforeWrite({});
             toJsonFile(resource.path, resource.name, resource.resource.toJson());
         });
-
-        // this.hooks.written({});
     }
 
     addResource(resource: WriteResource) {
