@@ -19,13 +19,13 @@ function argumentsToKubechainTargets(argv: any): KubechainTargets {
     });
 }
 
-function createKubechainConfiguration(argv: any): Kubechain {
+async function createKubechainConfiguration(argv: any): Promise<Kubechain> {
     let kubechain = new Kubechain(undefined);
     if (argvHasKubechainTargets(argv)) {
         kubechain = new Kubechain(argumentsToKubechainTargets(argv));
     }
     else {
-        kubechain.loadOptionsFromFileSystem()
+        await kubechain.loadOptionsFromFileSystem()
     }
 
     return kubechain;

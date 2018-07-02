@@ -2,7 +2,6 @@ import Options from "../../options";
 import Kubechain from "../../../../kubechain/kubechain";
 import KubernetesResourceCreator from '../../../../kubernetes-sdk/utilities/resources/resourcecreator';
 import ICommandExecutor from "../../../utilities/icommandexecutor";
-import {promptUserForDesiredContext} from "../../../utilities/cluster";
 
 export default class ClusterCreator implements ICommandExecutor {
     validCommandForChain(chain: string): boolean {
@@ -14,7 +13,7 @@ export default class ClusterCreator implements ICommandExecutor {
 
         try {
             console.info('[CREATING]');
-            const context = await promptUserForDesiredContext();
+            const context = options.get('$.kubernetes.context');
             console.info('[NETWORK]');
             await new KubernetesResourceCreator(options.get('$.name'), context).createResourcesFoundInDirectory(options.get('$.kubernetes.paths.root'));
             console.info('[SEEDS]');

@@ -53,6 +53,7 @@ interface FabricOptions {
             chaincodes: string
             postlaunch: string
         }
+        context: string
     }
 }
 
@@ -147,7 +148,8 @@ export default class Options {
                     ordererorganizations: Path.join(kubernetesRoot, 'ordererOrganizations'),
                     chaincodes: Path.join(kubernetesRoot, 'chaincodes'),
                     postlaunch: Path.join(kubernetesRoot, 'post-launch')
-                }
+                },
+                context: this.kubechain.get('$.kubernetes.context')
             }
         }
     }

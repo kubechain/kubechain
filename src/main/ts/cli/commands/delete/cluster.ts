@@ -19,21 +19,23 @@ const builder = {
     }
 };
 const handler = function (argv: any) {
-    const kubechain = createKubechainConfiguration(argv);
-    const targets = kubechain.get('$.targets');
-    deleters.forEach(async (Deleter) => {
-        try {
-            const deleter = new Deleter();
-            if (deleter.validCommandForChain(targets.blockchain)) {
-                console.log('Deleting Kubernetes cluster for %s', targets.blockchain);
-                await deleter.delete(kubechain);
+    (async () => {
+        const kubechain = await createKubechainConfiguration(argv);
+        const targets = kubechain.get('$.targets');
+        deleters.forEach(async (Deleter) => {
+            try {
+                const deleter = new Deleter();
+                if (deleter.validCommandForChain(targets.blockchain)) {
+                    console.log('Deleting Kubernetes cluster for %s', targets.blockchain);
+                    await deleter.delete(kubechain);
+                }
             }
-        }
-        catch (e) {
-            console.error("Unable to delete cluster for %s ", targets.blockchain);
-            console.error("Reason:", e);
-        }
-    })
+            catch (e) {
+                console.error("Unable to delete cluster for %s ", targets.blockchain);
+                console.error("Reason:", e);
+            }
+        })
+    })();
 };
 
 export {command, desc, builder, handler}

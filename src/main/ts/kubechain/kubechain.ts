@@ -3,10 +3,14 @@ import * as Path from "path";
 const jsonpath = require('jsonpath');
 import KubechainTargets from "./targets";
 import ITargetsJson from "./itargetsjson";
+import {promptUserForDesiredContext} from "../blockchains/utilities/cluster";
 
 interface Options {
     name: string
     targets: KubechainTargets
+    kubernetes: {
+        context: string
+    }
     paths: {
         root: string
         configuration: string
@@ -34,12 +38,13 @@ export default class Kubechain {
         return targets.blockchain + "-" + targets.kubernetes
     }
 
-    loadOptionsFromFileSystem() {
+    async loadOptionsFromFileSystem() {
         const cwd = process.cwd();
         console.warn("Loading configuration from file system..");
         const config = require(Path.join(cwd, 'kubechain.config.js'));
         this.options.name = this.targetsToName(config.targets);
         this.options.targets = new KubechainTargets(config.targets);
+        this.options.kubernetes.context = config.kubernetes.context || await promptUserForDesiredContext();
         this.options.adapter = config.adapter;
         this.options.paths = Kubechain.defaults().paths;
     }
@@ -52,6 +57,9 @@ export default class Kubechain {
                 blockchain: "",
                 kubernetes: ""
             }),
+            kubernetes: {
+                context: ""
+            },
             adapter: {
                 hooks: {},
                 options: {}

@@ -4,7 +4,6 @@ import ICommandExecutor from "../../../utilities/icommandexecutor";
 import Options from "../../options";
 import Kubechain from "../../../../kubechain/kubechain";
 import KubernetesResourceCreator from "../../../../kubernetes-sdk/utilities/resources/resourcecreator";
-import {promptUserForDesiredContext} from "../../../utilities/cluster";
 
 export default class ClusterCreator implements ICommandExecutor {
     private options: Options;
@@ -18,7 +17,7 @@ export default class ClusterCreator implements ICommandExecutor {
         this.options = new Options(kubechain);
         try {
             console.info('[CREATING]');
-            this.context = await promptUserForDesiredContext();
+            this.context = this.options.get('$.kubernetes.context');
             await this.launchOrdererOrganizations();
             await this.launchPeerOrganizations();
             await this.postLaunch();

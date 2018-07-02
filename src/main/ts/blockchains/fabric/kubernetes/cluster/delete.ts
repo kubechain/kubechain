@@ -4,7 +4,6 @@ import Options from '../../options';
 import ICommandExecutor from "../../../utilities/icommandexecutor";
 import Kubechain from '../../../../kubechain/kubechain';
 import KubernetesResourceDeleter from '../../../../kubernetes-sdk/utilities/resources/resourcedeleter';
-import {promptUserForDesiredContext} from "../../../utilities/cluster";
 
 export default class ClusterDeleter implements ICommandExecutor {
     private options: Options;
@@ -18,7 +17,7 @@ export default class ClusterDeleter implements ICommandExecutor {
         this.options = new Options(kubechain);
         try {
             console.info('[REMOVING]');
-            this.context = await promptUserForDesiredContext();
+            this.context = this.options.get('$.kubernetes.context');
             await this.deleteOrdererOrganizations();
             await this.deletePeerOrganizations();
             await this.deletePostLaunch();

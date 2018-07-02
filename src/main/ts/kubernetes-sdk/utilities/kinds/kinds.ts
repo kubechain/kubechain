@@ -14,6 +14,7 @@ import ClusterRoleBinding from "./cluster/clusterrolebinding";
 import StorageClass from "./cluster/storageclass";
 import CustomResourceDefinition from "./cluster/customeresourcedefinition";
 import ServiceAccount from "./cluster/serviceaccount";
+import Node from "./cluster/node";
 import DaemonSet from "./namespaced/daemonset";
 
 //TODO: Change to Enum.
@@ -37,7 +38,8 @@ function kindsWithoutNamespace(): IKind[] {
         new StorageClass(),
         new CustomResourceDefinition(),
         new ClusterRoleBinding(),
-        new ClusterRole()
+        new ClusterRole(),
+        new Node()
     ];
 }
 

@@ -20,15 +20,17 @@ const builder = {
 };
 
 function handler(argv: any) {
-    const kubechain = createKubechainConfiguration(argv);
-    const targets = kubechain.get('$.targets');
-    creators.forEach(async (ConfigurationCreator) => {
-        const creator = new ConfigurationCreator(kubechain);
-        if (creator.matchesTargets(targets)) {
-            console.log('Creating configuration for %s', targets.blockchain);
-            await creator.start(kubechain);
-        }
-    })
+    (async () => {
+        const kubechain = await createKubechainConfiguration(argv);
+        const targets = kubechain.get('$.targets');
+        creators.forEach(async (ConfigurationCreator) => {
+            const creator = new ConfigurationCreator(kubechain);
+            if (creator.matchesTargets(targets)) {
+                console.log('Creating configuration for %s', targets.blockchain);
+                await creator.start(kubechain);
+            }
+        })
+    })();
 }
 
 export {command, desc, builder, handler}

@@ -2,7 +2,6 @@ import Options from "../../options";
 import Kubechain from "../../../../kubechain/kubechain";
 import ICommandExecutor from "../../../utilities/icommandexecutor";
 import KubernetesResourceDeleter from "../../../../kubernetes-sdk/utilities/resources/resourcedeleter";
-import {promptUserForDesiredContext} from "../../../utilities/cluster";
 
 export default class ClusterDeleter implements ICommandExecutor {
 
@@ -12,7 +11,7 @@ export default class ClusterDeleter implements ICommandExecutor {
 
     async delete(kubechain: Kubechain) {
         const options = new Options(kubechain);
-        const context = await promptUserForDesiredContext();
+        const context = options.get('$.kubernetes.context');
         const deleter = new KubernetesResourceDeleter(options.get('$.name'), context);
         try {
             await deleter.deleteResourcesFoundInDirectoryTree(options.get('$.kubernetes.paths.root'));

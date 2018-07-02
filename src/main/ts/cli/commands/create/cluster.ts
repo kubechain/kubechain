@@ -20,15 +20,17 @@ const builder = {
 };
 
 function handler(argv: any) {
-    const kubechain = createKubechainConfiguration(argv);
-    const targets: ITargetsJson = kubechain.get('$.targets');
-    creators.forEach(async (Creator) => {
-        const creator = new Creator();
-        if (creator.validCommandForChain(targets.blockchain)) {
-            console.log('Creating Kubernetes cluster for %s', targets.blockchain);
-            await creator.create(kubechain);
-        }
-    })
+    (async () => {
+        const kubechain = await createKubechainConfiguration(argv);
+        const targets: ITargetsJson = kubechain.get('$.targets');
+        creators.forEach(async (Creator) => {
+            const creator = new Creator();
+            if (creator.validCommandForChain(targets.blockchain)) {
+                console.log('Creating Kubernetes cluster for %s', targets.blockchain);
+                await creator.create(kubechain);
+            }
+        })
+    })();
 }
 
 export {command, desc, builder, handler}

@@ -23,15 +23,17 @@ const builder = {
 };
 
 function handler(argv: any) {
-    const kubechain = createKubechainConfiguration(argv);
-    const targets = kubechain.get('$.targets');
-    adapters.forEach(Adapter => {
-        const adapter = new Adapter(kubechain);
-        if (adapter.matchesTargets(targets)) {
-            console.log('Creating Kubernetes congiguration for %s', targets.blockchain.name);
-            adapter.start();
-        }
-    })
+    (async () => {
+        const kubechain = await createKubechainConfiguration(argv);
+        const targets = kubechain.get('$.targets');
+        adapters.forEach(Adapter => {
+            const adapter = new Adapter(kubechain);
+            if (adapter.matchesTargets(targets)) {
+                console.log('Creating Kubernetes congiguration for %s', targets.blockchain.name);
+                adapter.start();
+            }
+        })
+    })();
 }
 
 export {command, desc, builder, handler}

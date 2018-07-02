@@ -9,7 +9,6 @@ import KubechainTargets from "../../../../kubechain/targets";
 import ResourceWriter from "../../utilities/blockchain/resourcewriter/resourcewriter";
 import * as KubernetesClient from "kubernetes-client";
 import Service from "../../../../kubernetes-sdk/utilities/kinds/namespaced/service";
-import {promptUserForDesiredContext} from "../../../utilities/cluster";
 import CrudResource from "../../../../kubernetes-sdk/utilities/resources/crud/crud-resource";
 import FabricHooks from "../../utilities/blockchain/hooks";
 
@@ -65,7 +64,7 @@ export default class Adapter implements IAdapter {
     private async getKubeDnsServiceClusterIp() {
         console.info('Hyperledger Fabric creates ChainCode containers without appropriate dns-search options.');
         console.info('Please provide your cluster-context so the correct dns-search options can be set.');
-        this.createKubernetesClient(await promptUserForDesiredContext());
+        this.createKubernetesClient(this.options.get('$.kubernetes.context'));
         const resource = {
             "apiVersion": "v1",
             "metadata": {

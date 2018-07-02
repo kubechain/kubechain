@@ -53,8 +53,6 @@ export default class CrudResource {
         return apiMethod;
     }
 
-    // api.v1.namespaces(namespace).persistentvolumeclaims.post
-
     private addKind(apiMethod: any): any {
         return apiMethod[this.kind.toPlural().toLowerCase()]
     }
@@ -67,7 +65,12 @@ export default class CrudResource {
         return this.baseApiMethod(client)(this.resource.metadata.name).delete();
     }
 
-    get(client: any, options: any): any {
+    get(client: any, options: any): Promise<any> {
         return this.baseApiMethod(client)(this.resource.metadata.name).get(options);
+    }
+
+    //TODO: This should be somewhere else. A crud-resource should operate on only 1 resource not multiple.
+    getAll(client: any, options: any): Promise<any> {
+        return this.baseApiMethod(client).get(options);
     }
 }
