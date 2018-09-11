@@ -26,6 +26,9 @@ export default class CommandLineInterfaceDeployment implements IResource {
     private createDeployment() {
         this.deployment = new Deployment(this.name, this.commandLineInterface.namespace());
         this.deployment.addMatchLabel("app", "cli");
+        if (this.options.get('$.affinity.tools')) {
+            this.deployment.setAffinity(this.options.get('$.affinity.tools'));
+        }
         this.commandLineInterface.addVolumeToPodSpec(this.deployment);
         this.commandLineInterface.addChannelsAsVolumes(this.deployment);
         this.commandLineInterface.addChainCodeAsVolumes(this.deployment);
@@ -47,7 +50,7 @@ export default class CommandLineInterfaceDeployment implements IResource {
     private createHyperledgerContainer() {
         const workingDirectory = Path.posix.join(Path.posix.sep, "opt", "gopath", "src", "github.com", "hyperledger", "fabric", "peer");
         const peerAddress = "peer0." + this.commandLineInterface.organizationName() + ":7051";
-        const hyperledgerContainer = new Container(this.name, `hyperledger/fabric-tools:x86_64-${this.options.get('$.version')}`);
+        const hyperledgerContainer = new Container(this.name, `hyperledger/fabric-tools:${this.options.get("$.tags.tools") || this.options.get('$.version')}`);
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_TLS_ENABLED", "false"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("CORE_VM_ENDPOINT", "unix:///host/var/run/docker.sock"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("GOPATH", "/opt/gopath"));

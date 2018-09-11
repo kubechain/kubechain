@@ -31,6 +31,9 @@ export default class CertificateAuthorityDeployment implements IResource {
         this.deployment.addMatchLabel("role", deploymentName);
         this.deployment.addMatchLabel("org", this.certificateAuthority.organizationName());
         this.deployment.addMatchLabel("name", deploymentName);
+        if (this.options.get('$.affinity.ca')) {
+            this.deployment.setAffinity(this.options.get('$.affinity.ca'));
+        }
         this.certificateAuthority.addVolumeToPodSpec(this.deployment);
     }
 
@@ -50,7 +53,7 @@ export default class CertificateAuthorityDeployment implements IResource {
     private createHyperledgerContainer(name: string) {
         const caCertFile = Path.posix.join(CertificateAuthorityDeployment.hyperledgerMountPath(), Path.basename(this.representation.filePaths.certificate));
         const caKeyFile = Path.posix.join(CertificateAuthorityDeployment.hyperledgerMountPath(), Path.basename(this.representation.filePaths.privateKey));
-        const hyperledgerCaContainer = new Container(name, `hyperledger/fabric-ca:x86_64-${this.options.get('$.version')}`);
+        const hyperledgerCaContainer = new Container(name, `hyperledger/fabric-ca:${this.options.get("$.tags.ca") || this.options.get('$.version')}`);
         hyperledgerCaContainer.addEnvironmentVariable(new EnvVar("FABRIC_CA_HOME", "/etc/hyperledger/fabric-ca-server"));
         hyperledgerCaContainer.addEnvironmentVariable(new EnvVar("FABRIC_CA_SERVER_CA_NAME", "ca"));
         hyperledgerCaContainer.addEnvironmentVariable(new EnvVar("FABRIC_CA_SERVER_TLS_ENABLED", "false"));

@@ -32,6 +32,9 @@ export default class OrdererDeployment {
         this.deployment.addMatchLabel("role", "orderer");
         this.deployment.addMatchLabel("org", this.orderer.organizationName());
         this.deployment.addMatchLabel("orderer-id", this.orderer.id());
+        if (this.options.get('$.affinity.orderer')) {
+            this.deployment.setAffinity(this.options.get('$.affinity.orderer'));
+        }
 
         this.orderer.addVolume(this.deployment);
         this.orderer.addGenesisBlockAsVolume(this.deployment);
@@ -63,7 +66,7 @@ export default class OrdererDeployment {
         const genesisBlockMountPath = Path.posix.join(hyperledgerMountPath, 'orderer.genesis.block');
         const mspMountPath = Path.posix.join(hyperledgerMountPath, 'msp');
         const tlsMountPath = Path.posix.join(hyperledgerMountPath, 'tls');
-        const hyperledgerContainer = new Container(this.name, `hyperledger/fabric-orderer:x86_64-${this.options.get('$.version')}`);
+        const hyperledgerContainer = new Container(this.name, `hyperledger/fabric-orderer:${this.options.get("$.tags.orderer") || this.options.get('$.version')}`);
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("ORDERER_GENERAL_LOGLEVEL", "debug"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("ORDERER_GENERAL_LISTENADDRESS", "0.0.0.0"));
         hyperledgerContainer.addEnvironmentVariable(new EnvVar("ORDERER_GENERAL_GENESISMETHOD", "file"));

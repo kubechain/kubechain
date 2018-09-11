@@ -38,6 +38,9 @@ export default class PeerDeployment implements IResource {
         this.deployment.addMatchLabel("role", "peer");
         this.deployment.addMatchLabel("peer-id", this.peer.id());
         this.deployment.addMatchLabel("org", this.peer.organizationName());
+        if (this.options.get('$.affinity.peer')) {
+            this.deployment.setAffinity(this.options.get('$.affinity.peer'));
+        }
 
         this.peerDataVolume = new EmptyDirVolume("peer-data");
         this.runHostPathVolume = new DirectoryOrCreateHostPathVolume('run');
@@ -61,12 +64,14 @@ export default class PeerDeployment implements IResource {
     }
 
     private createHyperledgerContainers() {
-        this.createCouchDbContainer();
+        if (this.options.get("$.options.useCouchDb")) {
+            this.createCouchDbContainer();
+        }
         this.createPeerContainer();
     }
 
     private createCouchDbContainer() {
-        const couchDbContainer = new Container("couchdb", `hyperledger/fabric-couchdb:x86_64-${this.options.get("$.version")}`);
+        const couchDbContainer = new Container("couchdb", `hyperledger/fabric-couchdb:${this.options.get("$.tags.couchDb") || this.options.get("$.version")}`);
         couchDbContainer.addPort(new ContainerPort(undefined, 5984));
         this.deployment.addContainer(couchDbContainer);
     }
@@ -74,9 +79,11 @@ export default class PeerDeployment implements IResource {
     private createPeerContainer() {
         this.createDnsSettings();
         const workingDirectory = Path.posix.join(Path.posix.sep, "opt", "gopath", "src", "github.com", "hyperledger", "fabric", "peer");
-        const hyperledgerPeerContainer = new Container(this.deploymentName, `hyperledger/fabric-peer:x86_64-${this.options.get("$.version")}`);
-        hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_LEDGER_STATE_STATEDATABASE", "CouchDB"));
-        hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS", "localhost:5984"));
+        const hyperledgerPeerContainer = new Container(this.deploymentName, `hyperledger/fabric-peer:${this.options.get("$.tags.peer") || this.options.get("$.version")}`);
+        if (this.options.get("$.options.useCouchDb")) {
+            hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_LEDGER_STATE_STATEDATABASE", "CouchDB"));
+            hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS", "localhost:5984"));
+        }
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_VM_ENDPOINT", "unix:///host/var/run/docker.sock"));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_LOGGING_LEVEL", "DEBUG"));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_TLS_ENABLED", "false"));
@@ -88,6 +95,7 @@ export default class PeerDeployment implements IResource {
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_TLS_ROOTCERT_FILE", "/etc/hyperledger/fabric/tls/ca.crt"));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_ID", this.peer.coreId()));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_ADDRESS", this.peer.address()));
+        hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_CHAINCODELISTENADDRESS", "0.0.0.0:7052"));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_GOSSIP_EXTERNALENDPOINT", this.peer.gossipAddress()));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_PEER_LOCALMSPID", this.peer.mspID()));
         hyperledgerPeerContainer.addEnvironmentVariable(new EnvVar("CORE_VM_DOCKER_HOSTCONFIG_DNS", this.dns.join(" ")));

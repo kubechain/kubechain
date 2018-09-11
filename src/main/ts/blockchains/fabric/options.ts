@@ -11,10 +11,24 @@ import FabricHooks from "./utilities/blockchain/hooks";
 interface FabricOptions {
     name: string
     version: string
+    tags: {
+        ca: string
+        couchDb: string
+        peer: string
+        orderer: string
+        tools: string
+    }
+    affinity: {
+        ca: string
+        tools: string
+        orderer: string
+        peer: string
+    }
     hooks: FabricHooks
     options: {
         channels: IChannel[]
         chaincodes: IChainCode[]
+        useCouchDb: boolean
     }
     configuration: {
         paths: {
@@ -77,7 +91,10 @@ export default class Options {
         const kubernetesRoot = Path.join(this.kubechain.get('$.paths.kubernetes'), this.kubechain.get('$.name'));
         return {
             name: this.kubechain.get('$.name'),
-            version: this.kubechain.get('$.adapter.version') || '1.0.0',
+            version: this.kubechain.get('$.adapter.version') || '1.2.0',
+            tags: this.kubechain.get('$.adapter.tags') || {},
+            affinity: this.kubechain.get('$.adapter.affinity') || {},
+            options: this.kubechain.get('$.adapter.options') || {chaincodes: [], channels: [], useCouchDb: false},
             hooks: this.kubechain.get('$.adapter.hooks') || {
                 creatingOrganization(data): void {
 
@@ -111,7 +128,6 @@ export default class Options {
                     }
                 }
             },
-            options: this.kubechain.get('$.adapter.options') || {chaincodes: [], channels: []},
             configuration: {
                 paths: {
                     root: configurationRoot,

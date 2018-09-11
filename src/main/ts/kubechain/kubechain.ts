@@ -1,30 +1,13 @@
 import * as Path from "path";
-
-const jsonpath = require('jsonpath');
 import KubechainTargets from "./targets";
 import ITargetsJson from "./itargetsjson";
 import {promptUserForDesiredContext} from "../blockchains/utilities/cluster";
+import KubechainOptions from "./options";
 
-interface Options {
-    name: string
-    targets: KubechainTargets
-    kubernetes: {
-        context: string
-    }
-    paths: {
-        root: string
-        configuration: string
-        blockchains: string
-        kubernetes: string
-    }
-    adapter: {
-        hooks: object
-        options: object
-    }
-}
+const jsonpath = require('jsonpath');
 
 export default class Kubechain {
-    private options: Options;
+    private options: KubechainOptions;
 
     constructor(targets: KubechainTargets) {
         this.options = Kubechain.defaults();
@@ -32,6 +15,10 @@ export default class Kubechain {
             this.options.name = this.targetsToName(targets.toJson());
             this.options.targets = targets;
         }
+    }
+
+    setOptions(options: KubechainOptions) {
+        this.options = options;
     }
 
     private targetsToName(targets: ITargetsJson) {
@@ -42,14 +29,14 @@ export default class Kubechain {
         const cwd = process.cwd();
         console.warn("Loading configuration from file system..");
         const config = require(Path.join(cwd, 'kubechain.config.js'));
-        this.options.name = this.targetsToName(config.targets);
+        this.options.name = config.name || this.targetsToName(config.targets);
         this.options.targets = new KubechainTargets(config.targets);
-        this.options.kubernetes.context = config.kubernetes.context || await promptUserForDesiredContext();
+        this.options.kubernetes.context = (config.kubernetes) ? config.kubernetes.context : await promptUserForDesiredContext();
         this.options.adapter = config.adapter;
         this.options.paths = Kubechain.defaults().paths;
     }
 
-    private static defaults(): Options {
+    private static defaults(): KubechainOptions {
         const cwd = process.cwd();
         return {
             name: "",
