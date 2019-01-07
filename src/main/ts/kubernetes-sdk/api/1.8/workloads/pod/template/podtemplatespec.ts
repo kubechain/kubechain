@@ -54,11 +54,14 @@ export default class PodTemplateSpec implements IPodTemplateSpec {
         this.spec.addVolume(volume);
     }
 
+    addNodeSelectorMatchLabel(label: string, value: any): void {
+        this.spec.addNodeSelectorMatchLabel(label, value);
+    }
+
     toJson(): any {
         return {
             "metadata": this.metadata.toJson(),
             "spec": this.spec.toJson()
         };
     }
-
 }

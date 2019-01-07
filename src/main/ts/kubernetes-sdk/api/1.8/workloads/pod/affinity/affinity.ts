@@ -1,18 +1,27 @@
 import IResource from "../../../iresource";
 import PodAntiAffinity from "./antiaffinity";
+import NodeAffinity from "./node/nodeaffinity";
 
 export default class Affinity implements IResource {
     private podAntiAffinity: PodAntiAffinity;
+    private nodeAffinity: NodeAffinity;
+
+    constructor() {
+    }
 
     setAntiAffinity(podAntiAffinity: PodAntiAffinity) {
         this.podAntiAffinity = podAntiAffinity;
     }
 
+    setNodeAffinity(nodeAffinity: NodeAffinity) {
+        this.nodeAffinity = nodeAffinity;
+    }
+
     toJson(): any {
         return {
-            podAntiAffinity: this.podAntiAffinity.toJson()
+            podAntiAffinity: (this.podAntiAffinity) ? this.podAntiAffinity.toJson() : undefined,
+            nodeAffinity: (this.nodeAffinity) ? this.nodeAffinity.toJson() : undefined
         };
-
     }
 }
 

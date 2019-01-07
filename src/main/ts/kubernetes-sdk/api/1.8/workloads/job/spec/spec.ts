@@ -69,6 +69,10 @@ export default class JobSpec implements IJobSpec, IResource {
         this.template.addVolume(volume);
     }
 
+    addNodeSelectorMatchLabel(label: string, value: any): void {
+        this.template.addNodeSelectorMatchLabel(label, value);
+    }
+
     toJson() {
         return {
             selector: this.selector.toJson(),

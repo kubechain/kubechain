@@ -28,6 +28,7 @@ interface FabricOptions {
     options: {
         channels: IChannel[]
         chaincodes: IChainCode[]
+        profile: string
         useCouchDb: boolean
     }
     configuration: {
@@ -94,7 +95,12 @@ export default class Options {
             version: this.kubechain.get('$.adapter.version') || '1.2.0',
             tags: this.kubechain.get('$.adapter.tags') || {},
             affinity: this.kubechain.get('$.adapter.affinity') || {},
-            options: this.kubechain.get('$.adapter.options') || {chaincodes: [], channels: [], useCouchDb: false},
+            options: this.kubechain.get('$.adapter.options') || {
+                chaincodes: [],
+                channels: [],
+                useCouchDb: false,
+                genesisProfile: undefined
+            },
             hooks: this.kubechain.get('$.adapter.hooks') || {
                 creatingOrganization(data): void {
 

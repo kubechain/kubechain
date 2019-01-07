@@ -64,6 +64,10 @@ export default class Job implements IJobSpec {
         this.spec.addVolume(volume);
     }
 
+    addNodeSelectorMatchLabel(label: string, value: any): void {
+        this.spec.addNodeSelectorMatchLabel(label, value);
+    }
+
     toJson(): any {
         return {
             apiVersion: "batch/v1",
@@ -72,5 +76,4 @@ export default class Job implements IJobSpec {
             spec: this.spec.toJson()
         };
     }
-
 }

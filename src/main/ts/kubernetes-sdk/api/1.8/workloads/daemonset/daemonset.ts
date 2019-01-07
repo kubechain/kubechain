@@ -59,6 +59,10 @@ export default class DaemonSet implements IDaemonSetSpec {
         this.spec.addVolume(volume);
     }
 
+    addNodeSelectorMatchLabel(label: string, value: any): void {
+        this.spec.addNodeSelectorMatchLabel(label, value);
+    }
+
     toJson(): any {
         return {
             apiVersion: "apps/v1beta2",

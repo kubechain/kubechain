@@ -70,6 +70,10 @@ export default class DeploymentSpec implements IDeploymentSpec, ILabels {
         this.template.addVolume(volume);
     }
 
+    addNodeSelectorMatchLabel(label: string, value: any): void {
+        this.template.addNodeSelectorMatchLabel(label, value);
+    }
+
     toJson(): any {
         return {
             "selector": this.selector.toJson(),

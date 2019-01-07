@@ -61,6 +61,10 @@ export default class Deployment implements IDeploymentSpec {
         this.spec.addVolume(volume);
     }
 
+    addNodeSelectorMatchLabel(label: string, value: any): void {
+        this.spec.addNodeSelectorMatchLabel(label, value);
+    }
+
     toJson(): any {
         return {
             "apiVersion": "apps/v1beta2",
@@ -69,5 +73,4 @@ export default class Deployment implements IDeploymentSpec {
             "spec": this.spec.toJson(),
         };
     }
-
 }

@@ -20,4 +20,6 @@ export default interface IPodSpec extends IResource {
     addContainer(container: IContainer): void;
 
     addVolume(volume: IVolume): void;
+
+    addNodeSelectorMatchLabel(label: string, value: any): void;
 }

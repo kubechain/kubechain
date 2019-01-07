@@ -3,6 +3,7 @@ import EnvVar from "./envvar";
 import VolumeMount from "./volumemount";
 import ContainerPort from "./port";
 import SecurityContext from "./securitycontext";
+import ResourceRequirements from "../../meta/resourcerequirements";
 
 export default class Container implements IContainer {
     private name: string;
@@ -15,6 +16,7 @@ export default class Container implements IContainer {
     private volumeMounts: VolumeMount[];
     private args: string[];
     private workingDirectory: string;
+    private resources: ResourceRequirements;
 
     constructor(name: string, image: string) {
         this.name = name;
@@ -59,6 +61,10 @@ export default class Container implements IContainer {
         this.workingDirectory = directoryPath;
     }
 
+    setResourceRequirements(resources: ResourceRequirements) {
+        this.resources = resources;
+    }
+
     toJson() {
         return {
             "name": this.name,
@@ -76,6 +82,7 @@ export default class Container implements IContainer {
             "volumeMounts": this.volumeMounts.map(volumeMount => {
                 return volumeMount.toJson();
             }),
+            "resources": (this.resources) ? this.resources.toJson() : undefined,
             "workingDir": this.workingDirectory
         }
     }

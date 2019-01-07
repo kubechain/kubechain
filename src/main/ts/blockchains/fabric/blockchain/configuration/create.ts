@@ -181,7 +181,7 @@ export default class ChainConfigurationCreator implements ICommandExecutor {
     }
 
     private async genesisBlockCommand() {
-        const profile = await this.promptUserForProfile();
+        const profile = this.options.get('$.options.profile') || await this.promptUserForProfile();
         return `"${path.join(this.options.get('$.blockchain.paths.bin'), 'configtxgen')}" -profile ${profile} -outputBlock "${path.join(this.options.get('$.blockchain.paths.root'), 'genesis.block')}"`;
     }
 

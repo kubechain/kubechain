@@ -3,7 +3,6 @@ import IPodSpec from "./ipodspec";
 import ObjectMeta from "../../meta/objectmeta";
 
 export default class Pod implements IResource {
-
     private spec: IPodSpec;
     private metadata: ObjectMeta;
 

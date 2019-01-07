@@ -13,11 +13,13 @@ export default class PodSpec implements IPodSpec {
     private containers: IContainer[];
     private volumes: IVolume[];
     private podSecurityContext: PodSecurityContext;
+    private nodeSelector: { [label: string]: any };
 
     constructor() {
         this.initContainers = [];
         this.containers = [];
         this.volumes = [];
+        this.nodeSelector = {};
     }
 
     setHostname(hostname: string) {
@@ -52,6 +54,10 @@ export default class PodSpec implements IPodSpec {
         this.volumes.push(volume);
     }
 
+    addNodeSelectorMatchLabel(label: string, value: any) {
+        this.nodeSelector[label] = value;
+    }
+
     toJson() {
         return {
             "hostname": this.hostname,
@@ -68,6 +74,7 @@ export default class PodSpec implements IPodSpec {
             "volumes": this.volumes.map((volume: IVolume) => {
                 return volume.toJson();
             }),
+            "nodeSelector": this.nodeSelector
         };
     }
 }
